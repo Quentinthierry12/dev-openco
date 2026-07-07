@@ -233,6 +233,19 @@ ok(rRadar.ok and rRadar.data.defcon ~= nil, "RADAR_STATE renvoie le DEFCON")
 local rDoorList = router.handle(ctx, req(REQ.DOOR_LIST, { token = adminTok }))
 ok(rDoorList.ok and type(rDoorList.data.doors) == "table", "DOOR_LIST")
 
+-- 11. Comptes & badges (via routeur) -----------------------------------------
+section("Routeur — comptes & badges")
+local frankId = rCreate.data.account.id
+local rRole = router.handle(ctx, req(REQ.ACCOUNT_SETROLE, { token = adminTok, id = frankId, role = "agent" }))
+ok(rRole.ok and rRole.data.account.role == "agent", "ACCOUNT_SETROLE par admin")
+local rCard = router.handle(ctx, req(REQ.ACCOUNT_SETCARD, { token = adminTok, id = frankId, cardId = "BADGE-1" }))
+ok(rCard.ok and rCard.data.account.hasCard, "ACCOUNT_SETCARD (émission badge)")
+ok(accounts:byCardId("BADGE-1") ~= nil, "la carte émise résout bien le compte")
+local rRoleF = router.handle(ctx, req(REQ.ACCOUNT_SETROLE, { token = agentTok, id = frankId, role = "admin" }))
+ok(not rRoleF.ok and rRoleF.error == "forbidden", "agent REFUSÉ sur ACCOUNT_SETROLE")
+local rSess = router.handle(ctx, req(REQ.SESSION_LIST, { token = adminTok }))
+ok(rSess.ok and type(rSess.data.sessions) == "table", "SESSION_LIST par admin")
+
 -- Intégration transport complet (client -> fil -> serveur -> fil -> client) ---
 section("Transport bout-en-bout (signé)")
 local clientReq = protocol.request(protocol.REQ.PING)

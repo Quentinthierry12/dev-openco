@@ -71,6 +71,24 @@ handlers[protocol.REQ.ACCOUNT_DELETE] = function(ctx, req)
   return protocol.ok({ done = true })
 end
 
+handlers[protocol.REQ.ACCOUNT_SETROLE] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "manage_accounts")
+  if errResp then return errResp end
+  local acc, reason = ctx.accounts:setRole(req.id, req.role)
+  if not acc then return protocol.err(reason) end
+  ctx.logs:add("account", s.name, "rôle de " .. acc.name .. " -> " .. acc.role)
+  return protocol.ok({ account = acc })
+end
+
+handlers[protocol.REQ.ACCOUNT_SETCARD] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "manage_accounts")
+  if errResp then return errResp end
+  local acc, reason = ctx.accounts:setCard(req.id, req.cardId)
+  if not acc then return protocol.err(reason) end
+  ctx.logs:add("badge", s.name, (req.cardId and "badge émis pour " or "badge révoqué pour ") .. acc.name)
+  return protocol.ok({ account = acc })
+end
+
 handlers[protocol.REQ.LOG_QUERY] = function(ctx, req)
   local _, errResp = need(ctx, req.token, "view_logs")
   if errResp then return errResp end
