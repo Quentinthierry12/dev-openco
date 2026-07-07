@@ -1,0 +1,8 @@
+# Données runtime & secrets — ne jamais committer
+server/data/secret
+server/data/whitelist
+server/data/*.tbl
+*.secsite.bak
+
+# Divers
+*.log
