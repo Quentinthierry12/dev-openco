@@ -139,6 +139,31 @@ handlers[protocol.REQ.RADAR_STATE] = function(ctx, req)
   return protocol.ok(ctx.radar:state())
 end
 
+handlers[protocol.REQ.NODE_REGISTER] = function(ctx, req, meta)
+  if not ctx.nodes then return protocol.err("no_fleet") end
+  -- Pas de token requis (l'agent boote avant toute session) mais message signé (réseau privé).
+  local address = (meta and meta.from) or req.address
+  local res, reason = ctx.nodes:register(address, req.kind)
+  if not res then return protocol.err(reason) end
+  return protocol.ok(res)
+end
+
+handlers[protocol.REQ.NODE_LIST] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "fleet_control")
+  if errResp then return errResp end
+  if not ctx.nodes then return protocol.ok({ nodes = {} }) end
+  return protocol.ok({ nodes = ctx.nodes:list() })
+end
+
+handlers[protocol.REQ.NODE_CMD] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "fleet_control")
+  if errResp then return errResp end
+  if not ctx.nodes then return protocol.err("no_fleet") end
+  local res, reason = ctx.nodes:command(req.address, req.command, s.name)
+  if not res then return protocol.err(reason) end
+  return protocol.ok(res)
+end
+
 handlers[protocol.REQ.SESSION_LIST] = function(ctx, req)
   local _, errResp = need(ctx, req.token, "manage_accounts")
   if errResp then return errResp end

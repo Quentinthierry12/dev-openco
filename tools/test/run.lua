@@ -19,6 +19,7 @@ local logsSvc = require("server.services.logs")
 local authSvc = require("server.services.auth")
 local doorsSvc = require("server.services.doors")
 local radarSvc = require("server.services.radar")
+local nodesSvc = require("server.services.nodes")
 local router = require("server.router")
 local REQ = protocol.REQ
 
@@ -245,6 +246,32 @@ local rRoleF = router.handle(ctx, req(REQ.ACCOUNT_SETROLE, { token = agentTok, i
 ok(not rRoleF.ok and rRoleF.error == "forbidden", "agent REFUSÉ sur ACCOUNT_SETROLE")
 local rSess = router.handle(ctx, req(REQ.SESSION_LIST, { token = adminTok }))
 ok(rSess.ok and type(rSess.data.sessions) == "table", "SESSION_LIST par admin")
+
+-- 12. Flotte à distance ------------------------------------------------------
+section("Flotte (nodes)")
+local sent = {}
+local nsvc = nodesSvc.new({ send = function(a, m) sent[#sent + 1] = { a, m.command } end, logs = logsSvc.new() })
+nsvc:register("node-A", "terminal")
+nsvc:register("node-B", "server")
+eq(#nsvc:list(), 2, "2 nœuds enregistrés")
+local c1 = nsvc:command("node-A", "reboot", "admin")
+ok(c1 and c1.sent, "commande envoyée à un nœud connu")
+eq(sent[#sent][2], "reboot", "le transport a reçu 'reboot'")
+local _, cr = nsvc:command("node-X", "reboot")
+eq(cr, "unknown_node", "nœud inconnu refusé")
+local _, cr2 = nsvc:command("node-A", "format")
+eq(cr2, "bad_command", "commande invalide refusée")
+
+section("Routeur — flotte")
+ctx.nodes = nodesSvc.new({ send = function() end, logs = logs })
+local rReg = router.handle(ctx, req(REQ.NODE_REGISTER, { kind = "terminal" }), { from = "node-Z" })
+ok(rReg.ok, "NODE_REGISTER via meta.from (sans token)")
+local rCmd = router.handle(ctx, req(REQ.NODE_CMD, { token = adminTok, address = "node-Z", command = "reboot" }))
+ok(rCmd.ok, "admin: NODE_CMD reboot")
+local rCmdF = router.handle(ctx, req(REQ.NODE_CMD, { token = agentTok, address = "node-Z", command = "reboot" }))
+ok(not rCmdF.ok and rCmdF.error == "forbidden", "agent REFUSÉ sur NODE_CMD (fleet_control admin-only)")
+local rNl = router.handle(ctx, req(REQ.NODE_LIST, { token = adminTok }))
+ok(rNl.ok and type(rNl.data.nodes) == "table", "NODE_LIST admin")
 
 -- Intégration transport complet (client -> fil -> serveur -> fil -> client) ---
 section("Transport bout-en-bout (signé)")

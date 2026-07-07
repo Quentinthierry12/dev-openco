@@ -17,6 +17,7 @@ local accountsSvc = require("server.services.accounts")
 local authSvc = require("server.services.auth")
 local doorsSvc = require("server.services.doors")
 local radarSvc = require("server.services.radar")
+local nodesSvc = require("server.services.nodes")
 local doorDriver = require("server.adapters.door_driver")
 local radarSource = require("server.adapters.radar_source")
 local alarmAdapter = require("server.adapters.alarm")
@@ -65,7 +66,12 @@ local radar = radarSvc.new({
   alarm = function(on, message) alarmAdapter.set(on, message) end,
 })
 
-local ctx = { accounts = accounts, auth = auth, logs = logs, doors = doors, radar = radar }
+local nodes = nodesSvc.new({
+  send = function(addr, m) modem.send(addr, protocol.PORT, netsec.encode(m)) end,
+  logs = logs,
+})
+
+local ctx = { accounts = accounts, auth = auth, logs = logs, doors = doors, radar = radar, nodes = nodes }
 
 -- Amorçage : premier lancement -> compte admin par défaut (à changer !).
 if accounts:count() == 0 then

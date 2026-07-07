@@ -42,7 +42,16 @@ protocol.DOOR_ACTIONS = {
 protocol.EVT = {
   ALERT     = "evt.alert",     -- montée DEFCON / missile
   LOCKDOWN  = "evt.lockdown",
-  ANNOUNCE  = "evt.announce",
+  ANNOUNCE  = "evt.announce",  -- annonce / bulletin
+}
+
+-- Messages serveur -> agent de nœud (gestion à distance).
+protocol.AGENT = {
+  EXEC = "agent.exec",         -- { command } où command ∈ NODE_COMMANDS
+}
+
+protocol.NODE_COMMANDS = {
+  reboot = true, shutdown = true, lock = true, status = true,
 }
 
 -- Construit une requête.
