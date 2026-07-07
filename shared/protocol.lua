@@ -28,6 +28,11 @@ protocol.REQ = {
   NODE_REGISTER   = "node.register",    -- { token?, address, kind }
   NODE_CMD        = "node.cmd",         -- { token, address, command }
   NODE_LIST       = "node.list",        -- { token }
+  -- Collaboration (lot 5) :
+  ANNOUNCE_POST   = "announce.post",    -- { token, text }
+  BOARD_GET       = "board.get",        -- { token }
+  MSG_SEND        = "msg.send",         -- { token, to, text }
+  MSG_INBOX       = "msg.inbox",        -- { token }
 }
 
 -- Actions de porte acceptées par DOOR_CMD.

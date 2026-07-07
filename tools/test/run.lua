@@ -20,6 +20,7 @@ local authSvc = require("server.services.auth")
 local doorsSvc = require("server.services.doors")
 local radarSvc = require("server.services.radar")
 local nodesSvc = require("server.services.nodes")
+local messagingSvc = require("server.services.messaging")
 local router = require("server.router")
 local REQ = protocol.REQ
 
@@ -272,6 +273,33 @@ local rCmdF = router.handle(ctx, req(REQ.NODE_CMD, { token = agentTok, address =
 ok(not rCmdF.ok and rCmdF.error == "forbidden", "agent REFUSÉ sur NODE_CMD (fleet_control admin-only)")
 local rNl = router.handle(ctx, req(REQ.NODE_LIST, { token = adminTok }))
 ok(rNl.ok and type(rNl.data.nodes) == "table", "NODE_LIST admin")
+
+-- 13. Collaboration ----------------------------------------------------------
+section("Collaboration (messaging)")
+local msvc = messagingSvc.new({ logs = logsSvc.new() })
+local an = msvc:announce("admin", "Test annonce")
+ok(an and an.text == "Test annonce", "annonce publiée")
+eq(#msvc:getBoard(), 1, "le bulletin contient l'annonce")
+local _, me = msvc:announce("admin", "")
+eq(me, "empty", "annonce vide refusée")
+msvc:send("admin", "bob", "Salut")
+eq(#msvc:getInbox("bob"), 1, "message reçu par bob")
+eq(#msvc:getInbox("carol"), 0, "carol n'a rien reçu")
+
+section("Routeur — collaboration")
+ctx.messaging = messagingSvc.new({ logs = logs })
+accounts:create({ name = "guest", role = "invite", password = "g" })
+local guestTok = router.handle(ctx, req(REQ.AUTH_PASSWORD, { name = "guest", password = "g" })).data.token
+local rAnnAgent = router.handle(ctx, req(REQ.ANNOUNCE_POST, { token = agentTok, text = "Ronde 22h" }))
+ok(rAnnAgent.ok, "agent publie une annonce")
+local rAnnGuest = router.handle(ctx, req(REQ.ANNOUNCE_POST, { token = guestTok, text = "spam" }))
+ok(not rAnnGuest.ok and rAnnGuest.error == "forbidden", "invité REFUSÉ pour ANNOUNCE_POST")
+local rBoard = router.handle(ctx, req(REQ.BOARD_GET, { token = guestTok }))
+ok(rBoard.ok and #rBoard.data.board >= 1, "invité peut lire le bulletin")
+local rMsg = router.handle(ctx, req(REQ.MSG_SEND, { token = adminTok, to = "guest", text = "bienvenue" }))
+ok(rMsg.ok, "admin envoie un message à guest")
+local rInbox = router.handle(ctx, req(REQ.MSG_INBOX, { token = guestTok }))
+ok(rInbox.ok and #rInbox.data.messages >= 1, "invité lit sa boîte de réception")
 
 -- Intégration transport complet (client -> fil -> serveur -> fil -> client) ---
 section("Transport bout-en-bout (signé)")

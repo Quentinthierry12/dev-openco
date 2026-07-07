@@ -170,6 +170,38 @@ handlers[protocol.REQ.SESSION_LIST] = function(ctx, req)
   return protocol.ok({ sessions = ctx.auth:list() })
 end
 
+handlers[protocol.REQ.ANNOUNCE_POST] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "announce")
+  if errResp then return errResp end
+  if not ctx.messaging then return protocol.err("no_messaging") end
+  local a, reason = ctx.messaging:announce(s.name, req.text)
+  if not a then return protocol.err(reason) end
+  return protocol.ok({ announce = a })
+end
+
+handlers[protocol.REQ.BOARD_GET] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.messaging then return protocol.ok({ board = {} }) end
+  return protocol.ok({ board = ctx.messaging:getBoard(req.limit) })
+end
+
+handlers[protocol.REQ.MSG_SEND] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.messaging then return protocol.err("no_messaging") end
+  local m, reason = ctx.messaging:send(s.name, req.to, req.text)
+  if not m then return protocol.err(reason) end
+  return protocol.ok({ message = m })
+end
+
+handlers[protocol.REQ.MSG_INBOX] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.messaging then return protocol.ok({ messages = {} }) end
+  return protocol.ok({ messages = ctx.messaging:getInbox(s.name) })
+end
+
 -- Point d'entrée.
 function router.handle(ctx, req, meta)
   local resp

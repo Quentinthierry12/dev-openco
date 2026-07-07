@@ -13,6 +13,7 @@ roles.PERMISSIONS = {
     "view_logs",
     "ack_alarm",
     "lockdown",
+    "announce",     -- publier une annonce / bulletin
     "door:*",       -- toutes les portes de zone...
     -- (le silo reste réservé à admin : "door:silo" n'est PAS couvert, voir ci-dessous)
   },

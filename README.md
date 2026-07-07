@@ -7,19 +7,24 @@ central headless détient comptes, rôles, journaux et l'état de sécurité. Le
 
 > Voir le plan complet et les décisions dans le fichier de plan de la session.
 
-## Fonctionnalités (état actuel — Lot 1)
+## Fonctionnalités
 
 - **Réseau privé** : chaque message est signé HMAC-SHA256 (SHA-256/HMAC en Lua pur, sans Data Card)
   + nonce anti-rejeu + liste blanche d'adresses. Un ordinateur sans le secret est ignoré.
 - **Comptes & rôles** : Admin / Agent / Invité, permissions vérifiées côté serveur. Carte et mot de
-  passe **hachés et salés** (jamais en clair).
-- **Double authentification** : carte OpenSecurity **ou** identifiant + mot de passe.
-- **Serveur** : daemon OpenOS, routeur de requêtes, journal d'audit, persistance fichier.
-- **Client MineOS** : lib réseau RPC, adaptateur lecteur de carte, squelette du fork de login,
-  application `SecurityConsole`.
+  passe **hachés et salés** (jamais en clair). **Double auth** : carte OpenSecurity **ou** mot de passe.
+- **Radar / DEFCON** : échelle 5→1, escalade automatique → sirène + LOCKDOWN + diffusion réseau +
+  journal. Source = composant OC du fork HBM, sinon **repli redstone**.
+- **Portes typées** : `simple`, `bunker`, `shelter`, `airlock` (sas **interverrouillé**), `silo`
+  (réservé Admin). Config déclarative ; driver redstone HBM **ou** composant OpenSecurity.
+- **Badges** : émission/révocation via `os_cardwriter`.
+- **Flotte à distance** : agent par machine + console **tablette** / `Fleet.app` pour
+  reboot/shutdown/lock/status (réservé Admin, journalisé).
+- **Collaboration** : bulletin d'annonces (diffusion + chatbox Computronics) + messagerie interne.
+- **Bonus** : HUD DEFCON OpenGlasses, hologramme des menaces.
+- **Volet Java** (`hbm-fork/`) : squelette d'intégration OpenComputers du radar HBM (LGPL v3).
 
-À venir : radar/DEFCON, portes typées (bunker/sas/shelter/silo), badges, gestion de flotte à
-distance (tablette), collaboration. Voir le plan de livraison.
+Tous les lots du plan de livraison sont implémentés. Logique métier **couverte par 100 tests**.
 
 ## Structure
 
@@ -39,7 +44,8 @@ docs/     installation, architecture, matériel
 Aucun besoin de Minecraft pour la logique. Avec Lua 5.3 :
 
 ```sh
-lua5.3 tools/test/run.lua          # 51 assertions : HMAC, netsec, rôles, comptes, auth, routeur
+lua5.3 tools/test/run.lua          # 100 assertions : HMAC, netsec, rôles, comptes, auth, portes,
+                                   # radar/DEFCON, flotte, collaboration, routeur, transport signé
 find . -name '*.lua' -exec luac5.3 -p {} \;   # vérification de syntaxe
 ```
 
