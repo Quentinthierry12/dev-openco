@@ -9,6 +9,11 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 local GUI = require("GUI")
 local system = require("System")
 local net = require("mineos.lib.net")
+local session = require("mineos.lib.session")
+local protocol = require("shared.protocol")
+
+-- Couleur d'affichage selon le niveau DEFCON (5 calme -> 1 imminent).
+local DEFCON_COLOR = { [5] = 0x2E7D32, [4] = 0x9E9D24, [3] = 0xF9A825, [2] = 0xEF6C00, [1] = 0xB71C1C }
 
 -- Fenêtre principale.
 local workspace, window = system.addWindow(GUI.filledWindow(1, 1, 88, 26, 0x1E1E1E))
@@ -17,8 +22,10 @@ window:addChild(GUI.panel(1, 1, window.width, 3, 0x2D2D2D))
 window:addChild(GUI.text(3, 2, 0xFFFFFF, "SECURITY CONSOLE — Intranet"))
 
 local statusLabel = window:addChild(GUI.text(3, 5, 0xAAAAAA, "Serveur : vérification…"))
+local defconPanel = window:addChild(GUI.panel(3, 7, 40, 3, 0x333333))
+local defconLabel = window:addChild(GUI.text(5, 8, 0xFFFFFF, "DEFCON : —"))
 
--- Vérifie la présence du serveur via un ping signé.
+-- Interroge serveur (ping) + état radar (DEFCON).
 local function refresh()
   local resp = net.ping()
   if resp and resp.ok then
@@ -27,6 +34,13 @@ local function refresh()
   else
     statusLabel.text = "Serveur : INJOIGNABLE"
     statusLabel.color = 0xDD4444
+  end
+
+  local rs = net.request(protocol.request(protocol.REQ.RADAR_STATE, { token = session.token() }))
+  if rs and rs.ok then
+    local d = rs.data.defcon or 5
+    defconLabel.text = "DEFCON : " .. d .. (rs.data.alert and "  ⚠ ALERTE" or "")
+    defconPanel.color = DEFCON_COLOR[d] or 0x333333
   end
   workspace:draw()
 end

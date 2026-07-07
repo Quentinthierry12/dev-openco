@@ -17,7 +17,10 @@ local protocol = require("shared.protocol")
 local accountsSvc = require("server.services.accounts")
 local logsSvc = require("server.services.logs")
 local authSvc = require("server.services.auth")
+local doorsSvc = require("server.services.doors")
+local radarSvc = require("server.services.radar")
 local router = require("server.router")
+local REQ = protocol.REQ
 
 -- Mini-framework -------------------------------------------------------------
 local passed, failed = 0, 0
@@ -161,6 +164,74 @@ ok(not rUnknown.ok and rUnknown.error == "unknown_type", "type inconnu")
 
 local rId = router.handle(ctx, { t = protocol.REQ.PING, id = "xyz" })
 eq(rId.id, "xyz", "id de corrélation renvoyé")
+
+-- 8. Portes typées -----------------------------------------------------------
+section("Portes typées")
+local recDriver = { writes = {} }
+function recDriver:write(door, key, on)
+  self.writes[#self.writes + 1] = { id = door.id, key = key, on = on }
+end
+local dsvc = doorsSvc.new(recDriver, logsSvc.new())
+local dOpen = dsvc:set("lobby", true, "tester")
+ok(dOpen and dOpen.open == true, "porte simple ouverte")
+local aIn = dsvc:airlock("airlock_A", "inner", true, "t")
+ok(aIn and aIn.open, "sas: battant intérieur ouvert")
+local aOut, aReason = dsvc:airlock("airlock_A", "outer", true, "t")
+ok(aOut == nil and aReason == "interlock", "sas interlock: extérieur refusé si intérieur ouvert")
+dsvc:airlock("airlock_A", "inner", false, "t")
+local aOut2 = dsvc:airlock("airlock_A", "outer", true, "t")
+ok(aOut2 and aOut2.open, "sas: extérieur s'ouvre après fermeture intérieur")
+dsvc:lockdown("t")
+ok(dsvc:isLocked(), "lockdown actif")
+local lSet, lReason = dsvc:set("lobby", true, "t")
+ok(lSet == nil and lReason == "locked", "ouverture refusée sous lockdown")
+ok(dsvc.state.airlock_A.outer == false, "lockdown a fermé le sas")
+dsvc:release("t")
+ok(not dsvc:isLocked(), "release du lockdown")
+ok(#recDriver.writes > 0, "le driver a reçu des ordres physiques")
+
+-- 9. Radar / DEFCON ----------------------------------------------------------
+section("Radar / DEFCON")
+local ev = { alarm = {}, broadcast = {}, lockdown = 0, release = 0 }
+local mockDoors = { locked = false }
+function mockDoors:lockdown() self.locked = true; ev.lockdown = ev.lockdown + 1 end
+function mockDoors:release() self.locked = false; ev.release = ev.release + 1 end
+local rsvc = radarSvc.new({
+  doors = mockDoors,
+  logs = logsSvc.new(),
+  alarm = function(on) ev.alarm[#ev.alarm + 1] = on end,
+  broadcast = function(e) ev.broadcast[#ev.broadcast + 1] = e.evt end,
+})
+eq(rsvc:update({ missiles = 0, signal = 0 }).defcon, 5, "calme -> DEFCON 5")
+local esc = rsvc:update({ missiles = 1, contacts = { { x = 1 } } })
+eq(esc.defcon, 2, "1 missile -> DEFCON 2")
+ok(esc.alert, "alerte active")
+eq(ev.lockdown, 1, "lockdown déclenché une fois")
+eq(ev.alarm[#ev.alarm], true, "sirène activée à l'escalade")
+eq(ev.broadcast[#ev.broadcast], "alert", "broadcast 'alert'")
+rsvc:update({ missiles = 1 })
+eq(ev.lockdown, 1, "pas de re-lockdown tant qu'en alerte")
+rsvc:update({ missiles = 0, signal = 0 })
+eq(ev.release, 1, "release au retour au calme")
+eq(ev.alarm[#ev.alarm], false, "sirène coupée")
+eq(ev.broadcast[#ev.broadcast], "clear", "broadcast 'clear'")
+
+-- 10. Routeur : portes & radar (avec permissions) ----------------------------
+section("Routeur — portes & radar")
+ctx.doors = doorsSvc.new(nil, logs)
+ctx.radar = radarSvc.new({ logs = logs })
+local rSilo = router.handle(ctx, req(REQ.DOOR_CMD, { token = adminTok, id = "silo_hatch", action = "open" }))
+ok(rSilo.ok, "admin ouvre le silo")
+local rAgentSilo = router.handle(ctx, req(REQ.DOOR_CMD, { token = agentTok, id = "silo_hatch", action = "open" }))
+ok(not rAgentSilo.ok and rAgentSilo.error == "forbidden", "agent REFUSÉ sur le silo")
+local rBunker = router.handle(ctx, req(REQ.DOOR_CMD, { token = agentTok, id = "bunker_main", action = "open" }))
+ok(rBunker.ok, "agent ouvre le bunker (door:*)")
+local rLock = router.handle(ctx, req(REQ.DOOR_CMD, { token = agentTok, action = "lockdown" }))
+ok(rLock.ok and rLock.data.locked, "agent déclenche le LOCKDOWN")
+local rRadar = router.handle(ctx, req(REQ.RADAR_STATE, { token = agentTok }))
+ok(rRadar.ok and rRadar.data.defcon ~= nil, "RADAR_STATE renvoie le DEFCON")
+local rDoorList = router.handle(ctx, req(REQ.DOOR_LIST, { token = adminTok }))
+ok(rDoorList.ok and type(rDoorList.data.doors) == "table", "DOOR_LIST")
 
 -- Intégration transport complet (client -> fil -> serveur -> fil -> client) ---
 section("Transport bout-en-bout (signé)")

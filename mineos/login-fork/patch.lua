@@ -11,6 +11,7 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 
 local net = require("mineos.lib.net")
 local card = require("mineos.lib.card")
+local session = require("mineos.lib.session")
 
 local patch = {}
 
@@ -31,9 +32,10 @@ end
 -- Le login MineOS choisit ensuite le profil (même nom) et ouvre la session.
 function patch.attach(onSuccess, onReject)
   return function()
-    local session, reason = patch.tryCardLogin(0.5)
-    if session then
-      if onSuccess then onSuccess(session) end
+    local s, reason = patch.tryCardLogin(0.5)
+    if s then
+      session.set(s) -- rend le token disponible aux apps de sécurité
+      if onSuccess then onSuccess(s) end
     elseif reason and reason ~= "timeout" and reason ~= "no_reader" then
       if onReject then onReject(reason) end
     end

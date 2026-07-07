@@ -5,6 +5,7 @@
 -- meta = { from = <adresse composant expéditeur> }
 
 local protocol = require("shared.protocol")
+local doorsCfg = require("shared.doors")
 
 local router = {}
 
@@ -74,6 +75,56 @@ handlers[protocol.REQ.LOG_QUERY] = function(ctx, req)
   local _, errResp = need(ctx, req.token, "view_logs")
   if errResp then return errResp end
   return protocol.ok({ entries = ctx.logs:query(req.limit) })
+end
+
+handlers[protocol.REQ.DOOR_LIST] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.doors then return protocol.ok({ doors = {} }) end
+  return protocol.ok({ doors = ctx.doors:all(), locked = ctx.doors:isLocked() })
+end
+
+handlers[protocol.REQ.DOOR_CMD] = function(ctx, req)
+  if not ctx.doors then return protocol.err("no_doors") end
+  local action = req.action
+  if not protocol.DOOR_ACTIONS[action] then return protocol.err("bad_action") end
+
+  -- Lockdown/release : permission globale "lockdown", pas liée à une porte précise.
+  if action == "lockdown" or action == "release" then
+    local s, errResp = need(ctx, req.token, "lockdown")
+    if errResp then return errResp end
+    local res = (action == "lockdown") and ctx.doors:lockdown(s.name) or ctx.doors:release(s.name)
+    return protocol.ok(res)
+  end
+
+  local door = doorsCfg.get(req.id)
+  if not door then return protocol.err("unknown_door") end
+  local s, errResp = need(ctx, req.token, doorsCfg.permission(door))
+  if errResp then return errResp end
+
+  local res, reason
+  if action == "open" then res, reason = ctx.doors:set(req.id, true, s.name)
+  elseif action == "close" then res, reason = ctx.doors:set(req.id, false, s.name)
+  elseif action == "inner_open" then res, reason = ctx.doors:airlock(req.id, "inner", true, s.name)
+  elseif action == "inner_close" then res, reason = ctx.doors:airlock(req.id, "inner", false, s.name)
+  elseif action == "outer_open" then res, reason = ctx.doors:airlock(req.id, "outer", true, s.name)
+  elseif action == "outer_close" then res, reason = ctx.doors:airlock(req.id, "outer", false, s.name)
+  end
+  if not res then return protocol.err(reason or "failed") end
+  return protocol.ok(res)
+end
+
+handlers[protocol.REQ.RADAR_STATE] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.radar then return protocol.ok({ defcon = 5, contacts = {}, alert = false }) end
+  return protocol.ok(ctx.radar:state())
+end
+
+handlers[protocol.REQ.SESSION_LIST] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "manage_accounts")
+  if errResp then return errResp end
+  return protocol.ok({ sessions = ctx.auth:list() })
 end
 
 -- Point d'entrée.

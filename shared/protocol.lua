@@ -18,12 +18,24 @@ protocol.REQ = {
   ACCOUNT_CREATE  = "account.create",  -- { token, name, role, cardId?, password? }
   ACCOUNT_DELETE  = "account.delete",  -- { token, id }
   LOG_QUERY       = "log.query",       -- { token, limit? }
-  -- Réservés aux lots suivants (radar, portes, flotte) :
-  DOOR_CMD        = "door.cmd",
-  RADAR_STATE     = "radar.state",
-  NODE_REGISTER   = "node.register",
-  NODE_CMD        = "node.cmd",
-  NODE_LIST       = "node.list",
+  DOOR_LIST       = "door.list",       -- { token }
+  DOOR_CMD        = "door.cmd",         -- { token, id, action }
+  RADAR_STATE     = "radar.state",      -- { token }
+  SESSION_LIST    = "session.list",     -- { token }
+  ACCOUNT_SETROLE = "account.setrole",  -- { token, id, role }
+  ACCOUNT_SETCARD = "account.setcard",  -- { token, id, cardId? }
+  -- Flotte (lot 4) :
+  NODE_REGISTER   = "node.register",    -- { token?, address, kind }
+  NODE_CMD        = "node.cmd",         -- { token, address, command }
+  NODE_LIST       = "node.list",        -- { token }
+}
+
+-- Actions de porte acceptées par DOOR_CMD.
+protocol.DOOR_ACTIONS = {
+  open = true, close = true,
+  inner_open = true, inner_close = true,
+  outer_open = true, outer_close = true,
+  lockdown = true, release = true,
 }
 
 -- Types d'événements diffusés (serveur -> clients).
