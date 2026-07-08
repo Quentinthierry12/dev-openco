@@ -23,6 +23,7 @@ local situationSvc = require("server.services.situation")
 local protocolsSvc = require("server.services.protocols")
 local powerSvc = require("server.services.power")
 local defenseSvc = require("server.services.defense")
+local settingsSvc = require("server.services.settings")
 local hbmMachine = require("server.adapters.hbm_machine")
 local defenseOut = require("server.adapters.defense_out")
 local doorDriver = require("server.adapters.door_driver")
@@ -108,11 +109,24 @@ local protocols = protocolsSvc.new({
   end,
 })
 
+-- Réglages runtime (édités par Config.app), appliqués à chaud aux services.
+local settings = settingsSvc.new({
+  path = DATA .. "/settings.tbl",
+  apply = function(key, value)
+    if key == "site.name" then situation.site.name = value
+    elseif key == "site.radius" then situation.site.radius = value
+    elseif key == "radar.alertLevel" then radar.alertLevel = value
+    elseif key == "defense.mode" then defense:setMode(value, "config")
+    elseif key == "defense.engageLevel" then defense.engageLevel = value end
+  end,
+})
+settings:load(); settings:applyAll()
+
 local ctx = {
   accounts = accounts, auth = auth, logs = logs,
   doors = doors, radar = radar, nodes = nodes, messaging = messaging,
   situation = situation, protocols = protocols,
-  power = power, defense = defense,
+  power = power, defense = defense, settings = settings,
   scram = function(id)
     local r = require("shared.reactors").get(id)
     return r and hbmMachine.scram(r.address) or false

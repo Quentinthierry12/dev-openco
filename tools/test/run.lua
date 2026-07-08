@@ -25,6 +25,7 @@ local situationSvc = require("server.services.situation")
 local protocolsSvc = require("server.services.protocols")
 local powerSvc = require("server.services.power")
 local defenseSvc = require("server.services.defense")
+local settingsSvc = require("server.services.settings")
 local router = require("server.router")
 local REQ = protocol.REQ
 
@@ -448,6 +449,28 @@ ok(router.handle(ctx, req(REQ.DEFENSE_STATE, { token = agentTok })).ok, "DEFENSE
 local rModeF = router.handle(ctx, req(REQ.DEFENSE_MODE, { token = agentTok, mode = "auto" }))
 ok(not rModeF.ok and rModeF.error == "forbidden", "agent REFUSÉ pour DEFENSE_MODE")
 eq(router.handle(ctx, req(REQ.DEFENSE_MODE, { token = adminTok, mode = "auto" })).data.mode, "auto", "admin change le mode défense")
+
+-- 19. Réglages (settings) + kiosk --------------------------------------------
+section("Réglages (settings)")
+local applied = {}
+local setsvc = settingsSvc.new({ apply = function(k, v) applied[k] = v end })
+local rset = setsvc:set("site.radius", "128", "admin")
+ok(rset and rset.value == 128, "set d'un number coercé depuis string")
+eq(applied["site.radius"], 128, "apply appelé avec la valeur")
+local _, se1 = setsvc:set("unknown.key", "x")
+eq(se1, "unknown_key", "clé inconnue refusée")
+local _, se2 = setsvc:set("site.radius", "abc")
+eq(se2, "bad_value", "valeur numérique invalide refusée")
+ok(#setsvc:list() >= 5, "liste des réglages du schéma")
+
+section("Routeur — kiosk & config")
+ctx.settings = settingsSvc.new({ apply = function() end })
+local rk = router.handle(ctx, req(REQ.KIOSK_GET))
+ok(rk.ok and rk.data.defcon ~= nil, "KIOSK_GET fonctionne SANS token (info publique)")
+ok(router.handle(ctx, req(REQ.SETTINGS_GET, { token = adminTok })).ok, "SETTINGS_GET admin")
+local rsf = router.handle(ctx, req(REQ.SETTINGS_GET, { token = agentTok }))
+ok(not rsf.ok and rsf.error == "forbidden", "agent REFUSÉ pour SETTINGS_GET")
+ok(router.handle(ctx, req(REQ.SETTINGS_SET, { token = adminTok, key = "defense.engageLevel", value = "1" })).ok, "SETTINGS_SET admin")
 
 -- 16. Installateur : cohérence du manifeste ----------------------------------
 section("Installateur — manifeste")

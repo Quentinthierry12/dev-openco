@@ -268,6 +268,32 @@ handlers[protocol.REQ.DEFENSE_FIRE] = function(ctx, req)
   return protocol.ok(res)
 end
 
+handlers[protocol.REQ.KIOSK_GET] = function(ctx)
+  -- Info publique (aucun token) : le réseau privé signé suffit à cloisonner.
+  local sit = ctx.situation and ctx.situation:compute() or { defcon = 5, alert = false }
+  local board = ctx.messaging and ctx.messaging:getBoard(5) or {}
+  return protocol.ok({
+    site = sit.site, defcon = sit.defcon, alert = sit.alert, locked = sit.locked, board = board,
+  })
+end
+
+handlers[protocol.REQ.SETTINGS_GET] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "config")
+  if errResp then return errResp end
+  if not ctx.settings then return protocol.ok({ settings = {} }) end
+  return protocol.ok({ settings = ctx.settings:list() })
+end
+
+handlers[protocol.REQ.SETTINGS_SET] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "config")
+  if errResp then return errResp end
+  if not ctx.settings then return protocol.err("no_settings") end
+  local res, reason = ctx.settings:set(req.key, req.value, s.name)
+  if not res then return protocol.err(reason) end
+  ctx.logs:add("config", s.name, req.key .. " = " .. tostring(res.value))
+  return protocol.ok(res)
+end
+
 -- Point d'entrée.
 function router.handle(ctx, req, meta)
   local resp
