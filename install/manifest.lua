@@ -21,6 +21,7 @@ local APPS = {
   "mineos/apps/Defense.app/Main.lua",
   "mineos/apps/Config.app/Main.lua",
   "mineos/apps/Map.app/Main.lua",
+  "mineos/apps/Setup.app/Main.lua",
 }
 
 local function concat(...)
