@@ -1,53 +1,66 @@
 -- mineos/login-fork/install.lua
--- Applique (ou ré-applique après une mise à jour de MineOS) le patch d'auth par carte.
+-- Prépare le fork du login MineOS (auth par carte OpenSecurity) et affiche l'insertion précise.
 --
--- STRATÉGIE (minimale et ré-appliable) :
---   1. On NE modifie PAS en profondeur le cœur de MineOS. On ajoute un hook léger.
---   2. Le point d'injection exact du login MineOS est À CONFIRMER dans les sources
---      (typiquement la fenêtre de connexion gérée par le System API). Ce script marque
---      clairement l'endroit à câbler et sauvegarde toute cible avant de la toucher.
---
--- ⚠️ Ce squelette est volontairement défensif : il ne réécrit rien tant que la cible réelle
---    n'a pas été confirmée en jeu. Il prépare le terrain (dépôt du patch, sauvegarde, marqueur).
+-- Structure réelle du login (MineOS `Libraries/System.lua`, fonction `system.authorize()`) :
+--   * les profils = dossiers listés par filesystem.list(paths.system.users)
+--   * le mot de passe est vérifié dans une fonction imbriquée :
+--       local hash = require("SHA-256").hash(input.text)
+--       if hash == userSettings.securityPassword then
+--           container:remove()
+--           updateUser(userName)      -- <- ouvre le bureau (local à authorize)
+--   * `updateUser` étant LOCAL, on injecte NOTRE écouteur À L'INTÉRIEUR de system.authorize,
+--     juste après que `container` et `updateUser` existent.
 
 local fs = require("filesystem")
 
+-- Emplacements plausibles de System.lua selon l'installation MineOS.
 local TARGET_HINTS = {
-  "/Fventuresecondary", -- placeholder
-  "/lib/System.lua",
   "/Libraries/System.lua",
   "/MineOS/Libraries/System.lua",
+  "/mnt/*/Libraries/System.lua",
 }
 
 local function exists(p) return fs and fs.exists and fs.exists(p) end
 
 local function backup(p)
-  if not exists(p) then return end
   local bak = p .. ".secsite.bak"
-  if not exists(bak) then
-    fs.copy(p, bak)
-    print("[secsite] sauvegarde: " .. bak)
-  end
+  if exists(p) and not exists(bak) then fs.copy(p, bak); print("[secsite] sauvegarde: " .. bak) end
 end
 
-print("[secsite] Installation du patch de login (carte OpenSecurity)")
-print("[secsite] Le module patch.lua est prêt: mineos/login-fork/patch.lua")
+local SNIPPET = [[
+-- === SecSite: auth par carte (à coller DANS system.authorize, après la création de
+--     `container` et la définition de `updateUser`) ===
+local secStop
+secStop = require("mineos.login-fork.patch").cardListener(function(userName)
+    -- N'accepte la carte que si un profil MineOS du même nom existe.
+    if filesystem.exists(paths.system.users .. userName .. "/") then
+        if secStop then secStop() end
+        container:remove()
+        updateUser(userName)
+        workspace:draw()
+    end
+end)
+-- Et : appeler secStop() sur la voie mot de passe juste avant/après container:remove().
+]]
 
--- Localise une cible plausible du login MineOS.
+print("[secsite] Fork du login MineOS — préparation")
 local target
 for _, hint in ipairs(TARGET_HINTS) do
-  if exists(hint) then target = hint break end
+  if not hint:find("%*") and exists(hint) then target = hint break end
 end
 
-if not target then
-  print("[secsite] Cible du login MineOS non trouvée automatiquement.")
-  print("[secsite] À FAIRE (en jeu) : repérer la fenêtre de connexion dans les sources MineOS,")
-  print("           puis y appeler patch.attach(onSuccess) pour brancher le swipe de carte.")
-  print("           patch.tryCardLogin() est utilisable tel quel pour un test manuel.")
-  return
+if target then
+  backup(target)
+  print("[secsite] System.lua détecté: " .. target .. " (sauvegardé)")
+else
+  print("[secsite] System.lua non trouvé automatiquement — repérez Libraries/System.lua.")
 end
 
-backup(target)
-print("[secsite] Cible détectée: " .. target)
-print("[secsite] Injectez l'appel à require('mineos.lib... patch').attach(...) au point de login.")
-print("[secsite] (ré-exécuter ce script après chaque update de MineOS)")
+print("[secsite] 1) Ouvrez system.authorize() dans System.lua.")
+print("[secsite] 2) Repérez la vérification du mot de passe :")
+print("           local hash = require('SHA-256').hash(input.text)")
+print("           if hash == userSettings.securityPassword then container:remove(); updateUser(userName)")
+print("[secsite] 3) Juste après la création de `container` et de `updateUser`, insérez :")
+print(SNIPPET)
+print("[secsite] La voie mot de passe MineOS reste inchangée. patch.tryCardLogin() permet aussi")
+print("           un test manuel immédiat sans toucher au login.")

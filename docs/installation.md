@@ -80,7 +80,11 @@ serveur écoute sur le port modem `2412` (voir `shared/protocol.lua`).
 
 ## Restent à confirmer en jeu / dans les sources
 
-- **Point d'injection du login MineOS** → `mineos/login-fork/` (appeler `patch.attach(...)` au bon
-  endroit ; `patch.tryCardLogin()` déjà utilisable pour un test manuel).
+- **Fork du login MineOS** — point d'injection **identifié** : `Libraries/System.lua`,
+  fonction `system.authorize()`. Le mot de passe y est vérifié par
+  `require("SHA-256").hash(input.text) == userSettings.securityPassword`, puis `updateUser(userName)`
+  (local) ouvre le bureau. Insérer `patch.cardListener(function(userName) … updateUser(userName) end)`
+  après la création de `container`/`updateUser` (snippet exact affiché par
+  `mineos/login-fork/install.lua`). Convention : le **nom du profil MineOS = nom du compte** SecSite.
 - **Canal/face redstone** du radar HBM et des portes → `radar_source.lua`, `shared/doors.lua`.
 - **Classes/champs HBM CE** pour l'addon Java → `hbm-oc-addon/` (mapping + Reflect).

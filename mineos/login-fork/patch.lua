@@ -45,4 +45,43 @@ function patch.attach(onSuccess, onReject)
   end
 end
 
+-- Écouteur NON bloquant pour l'écran de login MineOS forké (system.authorize).
+-- Enregistre les événements OpenSecurity (magData/rfidData) — et déclenche les scans RFID —
+-- puis, sur carte valide, appelle onUser(nomDeCompte, session). À insérer DANS system.authorize
+-- (voir login-fork/install.lua) : le nom de compte doit correspondre à un profil MineOS.
+-- Renvoie une fonction stop() à appeler quand on quitte l'écran de login.
+function patch.cardListener(onUser, onReject)
+  local event = require("event")
+  local reader, kind = card.reader()
+
+  local function handle(cardId)
+    if not cardId or cardId == "" then return end
+    local resp = net.loginCard(cardId)
+    if resp and resp.ok then
+      session.set(resp.data)
+      if onUser then onUser(resp.data.name, resp.data) end
+    elseif onReject then
+      onReject(resp and resp.error or "no_server")
+    end
+  end
+
+  -- magData: (_, address, playerName, cardData, cardUniqueId, isCardLocked, side)
+  local onMag = function(_, _, _, cardData, cardUniqueId) handle(cardData or cardUniqueId) end
+  -- rfidData: (_, uuid, playerName, distance, data)
+  local onRfid = function(_, _, _, _, data) handle(data) end
+  event.listen("magData", onMag)
+  event.listen("rfidData", onRfid)
+
+  local timer
+  if kind == "rfid" and reader then
+    timer = event.timer(1.5, function() pcall(reader.scan) end, math.huge)
+  end
+
+  return function()
+    event.ignore("magData", onMag)
+    event.ignore("rfidData", onRfid)
+    if timer then event.cancel(timer) end
+  end
+end
+
 return patch
