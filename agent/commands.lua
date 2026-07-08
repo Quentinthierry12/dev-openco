@@ -6,6 +6,16 @@ local computer = require("computer")
 
 local commands = {}
 
+-- Drapeau « poste inaccessible » persistant, lu par le watcher client.
+local FLAG = "/tmp/secsite.blackout"
+local function setFlag(on)
+  if on then
+    local f = io.open(FLAG, "w"); if f then f:write("1"); f:close() end
+  else
+    os.remove(FLAG)
+  end
+end
+
 function commands.exec(command)
   if command == "reboot" then
     computer.shutdown(true)  -- redémarre
@@ -17,6 +27,15 @@ function commands.exec(command)
     -- Verrou logique : positionne un drapeau lu par le login/kiosque du terminal.
     _G.SECSITE_LOCKED = true
     return { locked = true }
+  elseif command == "blackout" then
+    -- Override : rend le poste inaccessible (page plein écran via le watcher client).
+    _G.SECSITE_LOCKED = true
+    setFlag(true)
+    return { blackout = true }
+  elseif command == "release" then
+    _G.SECSITE_LOCKED = false
+    setFlag(false)
+    return { released = true }
   elseif command == "status" then
     return {
       address = computer.address and computer.address() or "?",

@@ -14,6 +14,7 @@ roles.PERMISSIONS = {
     "ack_alarm",
     "lockdown",
     "announce",     -- publier une annonce / bulletin
+    "drill",        -- lancer un protocole en mode simulation
     "door:*",       -- toutes les portes de zone...
     -- (le silo reste réservé à admin : "door:silo" n'est PAS couvert, voir ci-dessous)
   },

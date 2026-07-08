@@ -21,6 +21,8 @@ local doorsSvc = require("server.services.doors")
 local radarSvc = require("server.services.radar")
 local nodesSvc = require("server.services.nodes")
 local messagingSvc = require("server.services.messaging")
+local situationSvc = require("server.services.situation")
+local protocolsSvc = require("server.services.protocols")
 local router = require("server.router")
 local REQ = protocol.REQ
 
@@ -300,6 +302,66 @@ local rMsg = router.handle(ctx, req(REQ.MSG_SEND, { token = adminTok, to = "gues
 ok(rMsg.ok, "admin envoie un message à guest")
 local rInbox = router.handle(ctx, req(REQ.MSG_INBOX, { token = guestTok }))
 ok(rInbox.ok and #rInbox.data.messages >= 1, "invité lit sa boîte de réception")
+
+-- 14. Salle de contrôle : situation ------------------------------------------
+section("Situation (salle de contrôle)")
+local sit = situationSvc.new({ site = require("shared.site").CONFIG })
+eq(sit:compute({ defcon = 5, contacts = {}, alert = false }, {}, false).impactRisk, "aucun", "pas d'alerte -> risque aucun")
+local s1 = sit:compute({ defcon = 2, contacts = { { x = 0, y = 64, z = 100, speed = 20 } }, alert = true }, {}, false)
+ok(s1.impactETA and math.abs(s1.impactETA - 5) < 0.01, "ETA = distance/vitesse (100/20 = 5s)")
+eq(s1.impactRisk, "élevé", "ETA<=10s -> risque élevé")
+eq(sit:compute({ defcon = 2, contacts = { {} }, alert = true }, {}, false).impactRisk, "inconnu", "alerte sans coords -> inconnu")
+local s3 = sit:compute({ defcon = 5, contacts = {}, alert = false },
+  { { id = "a", type = "airlock", state = {} }, { id = "b", type = "bunker", state = {} } }, false)
+eq(s3.lockdownFullSeconds, 5, "temps lockdown complet = airlock(3) + porte(2)")
+eq(#s3.importantDoors, 2, "portes importantes listées")
+
+-- 15. Protocoles / overrides -------------------------------------------------
+section("Protocoles / overrides")
+local rec = { announces = 0, lockdown = 0, release = 0, alarms = {}, disabled = {} }
+local mockD = {}
+function mockD:lockdown() rec.lockdown = rec.lockdown + 1 end
+function mockD:release() rec.release = rec.release + 1 end
+local mockM = {}
+function mockM:announce() rec.announces = rec.announces + 1 end
+local mockN = {}
+function mockN:commandAll(cmd, exclude) rec.disabled[#rec.disabled + 1] = { cmd, exclude } end
+local psvc = protocolsSvc.new({
+  doors = mockD, messaging = mockM, nodes = mockN, logs = logsSvc.new(),
+  alarm = function(on) rec.alarms[#rec.alarms + 1] = on end,
+})
+local pr = psvc:run("2222", { drill = false }, "admin")
+ok(pr and not pr.drill, "protocole réel exécuté")
+eq(rec.lockdown, 1, "lockdown réel déclenché")
+eq(rec.alarms[1], true, "sirène activée")
+rec.lockdown = 0
+local pd = psvc:run("2222", { drill = true }, "agent")
+ok(pd and pd.drill, "protocole joué en drill")
+eq(rec.lockdown, 0, "drill ne déclenche PAS le lockdown réel")
+psvc:run("9999", {}, "admin")
+local last = rec.disabled[#rec.disabled]
+ok(last[1] == "blackout" and last[2] == "display", "override coupe les postes SAUF les écrans (display)")
+local _, pu = psvc:run("0001", {}, "admin")
+eq(pu, "unknown_protocol", "code inconnu refusé")
+local _, pnd = psvc:run("0000", { drill = true }, "admin")
+eq(pnd, "not_drillable", "protocole non-drillable refusé en drill")
+
+section("Flotte — commandAll (override)")
+local sent3 = {}
+local nAll = nodesSvc.new({ send = function(a, m) sent3[#sent3 + 1] = { a, m.command } end, logs = logsSvc.new() })
+nAll:register("t1", "terminal"); nAll:register("t2", "terminal"); nAll:register("d1", "display")
+eq(nAll:commandAll("blackout", "display", "admin").count, 2, "blackout -> 2 terminaux, écran épargné")
+
+section("Routeur — situation & protocoles")
+ctx.situation = situationSvc.new({ radar = ctx.radar, doors = ctx.doors })
+ctx.protocols = protocolsSvc.new({ doors = ctx.doors, messaging = ctx.messaging, nodes = ctx.nodes, logs = logs, alarm = function() end })
+ok(router.handle(ctx, req(REQ.SITUATION_GET, { token = agentTok })).ok, "SITUATION_GET")
+ok(#router.handle(ctx, req(REQ.PROTOCOL_LIST, { token = agentTok })).data.protocols >= 1, "PROTOCOL_LIST")
+local rDrill = router.handle(ctx, req(REQ.PROTOCOL_RUN, { token = agentTok, code = "2222", drill = true }))
+ok(rDrill.ok and rDrill.data.drill, "agent peut lancer un DRILL")
+local rReal = router.handle(ctx, req(REQ.PROTOCOL_RUN, { token = agentTok, code = "2222", drill = false }))
+ok(not rReal.ok and rReal.error == "forbidden", "agent REFUSÉ pour un protocole RÉEL")
+ok(router.handle(ctx, req(REQ.PROTOCOL_RUN, { token = adminTok, code = "0000", drill = false })).ok, "admin exécute un protocole réel")
 
 -- Intégration transport complet (client -> fil -> serveur -> fil -> client) ---
 section("Transport bout-en-bout (signé)")

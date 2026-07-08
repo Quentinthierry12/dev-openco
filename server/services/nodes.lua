@@ -51,4 +51,23 @@ function nodes:command(address, command, actor)
   return { address = address, command = command, sent = true }
 end
 
+-- Diffuse une commande à TOUS les nœuds, en épargnant ceux de type `excludeKind`
+-- (ex. "display" pour garder les écrans du mur allumés lors d'un blackout).
+function nodes:commandAll(command, excludeKind, actor)
+  if not protocol.NODE_COMMANDS[command] then return nil, "bad_command" end
+  if not self.send then return nil, "no_transport" end
+  local count = 0
+  for address, n in pairs(self.registry) do
+    if not (excludeKind and n.kind == excludeKind) then
+      self.send(address, { t = protocol.AGENT.EXEC, command = command })
+      count = count + 1
+    end
+  end
+  if self.logs then
+    self.logs:add("fleet", actor or "?",
+      "commande '" .. command .. "' -> flotte (sauf " .. tostring(excludeKind or "-") .. ") x" .. count)
+  end
+  return { command = command, count = count }
+end
+
 return nodes

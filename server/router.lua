@@ -202,6 +202,31 @@ handlers[protocol.REQ.MSG_INBOX] = function(ctx, req)
   return protocol.ok({ messages = ctx.messaging:getInbox(s.name) })
 end
 
+handlers[protocol.REQ.SITUATION_GET] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.situation then return protocol.ok({ defcon = 5, alert = false }) end
+  return protocol.ok(ctx.situation:compute())
+end
+
+handlers[protocol.REQ.PROTOCOL_LIST] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.protocols then return protocol.ok({ protocols = {} }) end
+  return protocol.ok({ protocols = ctx.protocols:list() })
+end
+
+handlers[protocol.REQ.PROTOCOL_RUN] = function(ctx, req)
+  -- Réel -> permission "protocol" (admin) ; drill -> permission "drill" (agent+admin).
+  local perm = req.drill and "drill" or "protocol"
+  local s, errResp = need(ctx, req.token, perm)
+  if errResp then return errResp end
+  if not ctx.protocols then return protocol.err("no_protocols") end
+  local res, reason = ctx.protocols:run(req.code, { drill = req.drill }, s.name)
+  if not res then return protocol.err(reason) end
+  return protocol.ok(res)
+end
+
 -- Point d'entrée.
 function router.handle(ctx, req, meta)
   local resp

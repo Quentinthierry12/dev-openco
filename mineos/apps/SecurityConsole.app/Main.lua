@@ -45,11 +45,20 @@ local function refresh()
   workspace:draw()
 end
 
-window:addChild(GUI.button(3, 7, 24, 3, 0x3C3C3C, 0xFFFFFF, 0x2D2D2D, 0xFFFFFF, "Rafraîchir")).onTouch = function()
+window:addChild(GUI.button(3, 11, 24, 3, 0x3C3C3C, 0xFFFFFF, 0x2D2D2D, 0xFFFFFF, "Rafraîchir")).onTouch = function()
   refresh()
 end
 
-window:addChild(GUI.text(3, 12, 0x888888, "Modules à venir (lot 2) : DEFCON • Portes • Alarmes • Journal"))
+-- Saisie rapide d'un code de protocole (drill/réel).
+window:addChild(GUI.text(3, 16, 0xAAAAAA, "Code protocole :"))
+local codeInput = window:addChild(GUI.input(19, 16, 12, 1, 0x262626, 0x999999, 0x262626, 0xFFFFFF, 0xFFFFFF, "", "code"))
+local function runProto(drill)
+  if codeInput.text == "" then return end
+  local r = net.request(protocol.request(protocol.REQ.PROTOCOL_RUN, { token = session.token(), code = codeInput.text, drill = drill }))
+  GUI.alert((r and r.ok) and ((drill and "DRILL: " or "Exécuté: ") .. r.data.name) or ("Échec: " .. tostring(r and r.error)))
+end
+window:addChild(GUI.button(33, 16, 10, 1, 0x9E9D24, 0xFFF, 0x2D2D2D, 0xFFF, "Drill")).onTouch = function() runProto(true) end
+window:addChild(GUI.button(45, 16, 10, 1, 0xB71C1C, 0xFFF, 0x2D2D2D, 0xFFF, "RÉEL")).onTouch = function() runProto(false) end
 
 refresh()
 workspace:draw()

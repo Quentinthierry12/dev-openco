@@ -19,6 +19,8 @@ local doorsSvc = require("server.services.doors")
 local radarSvc = require("server.services.radar")
 local nodesSvc = require("server.services.nodes")
 local messagingSvc = require("server.services.messaging")
+local situationSvc = require("server.services.situation")
+local protocolsSvc = require("server.services.protocols")
 local doorDriver = require("server.adapters.door_driver")
 local radarSource = require("server.adapters.radar_source")
 local alarmAdapter = require("server.adapters.alarm")
@@ -80,9 +82,19 @@ local messaging = messagingSvc.new({
   end,
 })
 
+local situation = situationSvc.new({ radar = radar, doors = doors })
+local protocols = protocolsSvc.new({
+  doors = doors, nodes = nodes, messaging = messaging, logs = logs,
+  alarm = function(on, message) alarmAdapter.set(on, message) end,
+  broadcast = function(evt)
+    modem.broadcast(protocol.PORT, netsec.encode({ t = protocol.EVT.ANNOUNCE, text = "[PROTOCOLE] " .. (evt.name or "") }))
+  end,
+})
+
 local ctx = {
   accounts = accounts, auth = auth, logs = logs,
   doors = doors, radar = radar, nodes = nodes, messaging = messaging,
+  situation = situation, protocols = protocols,
 }
 
 -- Amorçage : premier lancement -> compte admin par défaut (à changer !).

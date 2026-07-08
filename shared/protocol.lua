@@ -33,6 +33,10 @@ protocol.REQ = {
   BOARD_GET       = "board.get",        -- { token }
   MSG_SEND        = "msg.send",         -- { token, to, text }
   MSG_INBOX       = "msg.inbox",        -- { token }
+  -- Salle de contrôle & protocoles (lot 7) :
+  SITUATION_GET   = "situation.get",    -- { token }
+  PROTOCOL_LIST   = "protocol.list",    -- { token }
+  PROTOCOL_RUN    = "protocol.run",     -- { token, code, drill }
 }
 
 -- Actions de porte acceptées par DOOR_CMD.
@@ -57,6 +61,7 @@ protocol.AGENT = {
 
 protocol.NODE_COMMANDS = {
   reboot = true, shutdown = true, lock = true, status = true,
+  blackout = true, release = true, -- override « poste inaccessible » + levée
 }
 
 -- Construit une requête.
