@@ -92,36 +92,43 @@ if role == "display" then kind = "display" end
 writeFile(root .. "/secsite.cfg",
   ("{role=%q,kind=%q,root=%q}"):format(role, kind, root))
 
--- 6) Autostart : écrit la ligne de lancement dans /home/.shrc (idempotent).
-local launch = {
-  server = "SECSITE_ROOT=" .. root .. " " .. root .. "/server/main.lua",
-  agent = "SECSITE_ROOT=" .. root .. " " .. root .. "/agent/main.lua",
-  display = "SECSITE_ROOT=" .. root .. " " .. root .. "/display/wall.lua center",
-  terminal = "SECSITE_ROOT=" .. root .. " " .. root .. "/agent/main.lua &", -- agent en tâche de fond
+-- 6) Autostart : écrit la commande de lancement dans /home/.shrc (idempotent).
+-- Syntaxe OpenOS : juste le chemin du programme (pas de "VAR=val cmd", pas de "&").
+-- SECSITE_ROOT n'est nécessaire que si le dossier n'est pas le défaut /home/secsite
+-- (le code retombe sur /home/secsite si la variable est absente).
+local prog = {
+  server = root .. "/server/main.lua",
+  agent = root .. "/agent/main.lua",
+  display = root .. "/display/wall.lua center",
+  terminal = root .. "/agent/main.lua",
 }
-local function ensureAutostart(line)
-  if not line then return end
+local function ensureAutostart(programLine)
+  if not programLine then return end
+  local block = programLine
+  if root ~= "/home/secsite" then
+    block = "set SECSITE_ROOT=" .. root .. "\n" .. programLine
+  end
   local existing = ""
   local rf = io.open("/home/.shrc", "r")
   if rf then existing = rf:read("*a") or ""; rf:close() end
-  if existing:find(line, 1, true) then
+  if existing:find(programLine, 1, true) then
     print("Autostart déjà présent.")
     return
   end
   local wf = io.open("/home/.shrc", "a")
   if wf then
-    wf:write("\n# SecSite autostart\n" .. line .. "\n"); wf:close()
+    wf:write("\n# SecSite autostart\n" .. block .. "\n"); wf:close()
     print("Autostart ajouté à /home/.shrc :")
-    print("  " .. line)
+    print("  " .. programLine)
   else
-    print("Impossible d'écrire /home/.shrc ; ajoutez manuellement : " .. line)
+    print("Impossible d'écrire /home/.shrc ; ajoutez manuellement : " .. programLine)
   end
 end
 
 print("")
 print("=== Installation terminée (rôle: " .. role .. ") ===")
 if ask("Configurer le démarrage automatique ? (o/n)", "o") == "o" then
-  ensureAutostart(launch[role])
+  ensureAutostart(prog[role])
 end
 if role == "terminal" then
   print("Copiez les *.app dans les Applications MineOS, puis lancez:")
