@@ -53,7 +53,10 @@ local root = ask("Dossier d'installation", DEFAULT_ROOT)
 print("Téléchargement du manifeste…")
 local manText, mErr = download(base .. "/install/manifest.lua")
 if not manText then print("Échec manifeste: " .. tostring(mErr)); return end
-local manifest = load(manText, "=manifest", "t", {})()
+-- Le manifeste est notre propre code de confiance -> environnement global (accès à ipairs/table).
+local chunk, lErr = load(manText, "=manifest", "t", _G)
+if not chunk then print("Manifeste illisible: " .. tostring(lErr)); return end
+local manifest = chunk()
 print("Rôles disponibles: " .. table.concat(manifest.ROLE_LIST, ", "))
 local role = ask("Rôle de cette machine", "terminal")
 local files = manifest.ROLES[role]
