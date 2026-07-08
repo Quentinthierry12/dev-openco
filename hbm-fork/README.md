@@ -1,4 +1,10 @@
-# hbm-fork — Intégration OpenComputers dans HBM's Nuclear Tech (1.12.2)
+# hbm-fork — (Approche fork, remplacée par hbm-oc-addon/)
+
+> ℹ️ **Approche retenue : `hbm-oc-addon/`** (un addon OC séparé, sans modifier HBM). Ce dossier
+> `hbm-fork/` conserve l'esquisse initiale « par fork » à titre de référence. Pour l'intégration
+> complète (portes/silo/réacteur/radar), voir **`hbm-oc-addon/`**.
+
+# Intégration OpenComputers dans HBM's Nuclear Tech (1.12.2) — esquisse fork
 
 Volet **Java/Forge** du projet : exposer le **radar HBM** (puis silo/réacteur) comme **composant
 OpenComputers**, afin d'obtenir une vraie API (`getContacts()`, `getThreatLevel()`) au lieu du seul

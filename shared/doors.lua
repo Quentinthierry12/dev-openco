@@ -54,6 +54,15 @@ doors.CONFIG = {
     roles = { "admin" }, -- + permission restreinte "door:silo"
     driver = { kind = "redstone", side = "south", channel = 5 },
   },
+  {
+    id = "bunker_oc",
+    name = "Porte bunker (via addon OC HBM)",
+    type = "bunker",
+    zone = "A",
+    roles = { "admin", "agent" },
+    -- Pilotage direct par composant HBM exposé par hbm-oc-addon (au lieu du redstone).
+    driver = { kind = "hbm_oc", address = "REPLACE_WITH_HBM_DOOR_ADDRESS" },
+  },
 }
 
 function doors.get(id)

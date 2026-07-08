@@ -21,10 +21,17 @@ central headless détient comptes, rôles, journaux et l'état de sécurité. Le
 - **Flotte à distance** : agent par machine + console **tablette** / `Fleet.app` pour
   reboot/shutdown/lock/status (réservé Admin, journalisé).
 - **Collaboration** : bulletin d'annonces (diffusion + chatbox Computronics) + messagerie interne.
+- **Salle de contrôle** : mur d'écrans (`display/wall.lua`) — écran central bascule en alerte, écrans
+  latéraux = dashboard (DEFCON, alarme, lockdown + compte à rebours, ETA/risque d'impact, sas/portes).
+- **Protocoles / overrides** : séquences par code, mode **drill** (simulation) ou réel ; override
+  « couper tous les postes » (page « INACCESSIBLE ») épargnant les écrans du mur.
+- **Installateur une-commande** (`install/`) : `wget … && install.lua` — assistant rôle + secret +
+  mot de passe admin + autostart.
 - **Bonus** : HUD DEFCON OpenGlasses, hologramme des menaces.
-- **Volet Java** (`hbm-fork/`) : squelette d'intégration OpenComputers du radar HBM (LGPL v3).
+- **Addon OC HBM** (`hbm-oc-addon/`) : mod Forge séparé exposant les blocs HBM CE (portes/silo/
+  réacteur/radar + générique) comme composants OpenComputers, sans modifier HBM.
 
-Tous les lots du plan de livraison sont implémentés. Logique métier **couverte par 100 tests**.
+Tous les lots du plan sont implémentés. Logique métier **couverte par 121 tests**.
 
 ## Structure
 

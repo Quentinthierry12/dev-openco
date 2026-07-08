@@ -1,0 +1,12 @@
+[
+  {
+    "modid": "hbmocaddon",
+    "name": "HBM OpenComputers Addon",
+    "description": "Expose les blocs de HBM's Nuclear Tech (CE) comme composants OpenComputers.",
+    "version": "${version}",
+    "mcversion": "1.12.2",
+    "authors": ["SecSite"],
+    "dependencies": ["opencomputers"],
+    "requiredMods": ["opencomputers"]
+  }
+]

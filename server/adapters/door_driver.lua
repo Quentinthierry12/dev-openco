@@ -39,6 +39,17 @@ function driver:write(door, key, on)
     else
       return (pcall(proxy.close))
     end
+
+  elseif d.kind == "hbm_oc" then
+    -- Porte HBM exposée par l'addon OpenComputers (hbm-oc-addon/) : composant hbm_door.
+    if not d.address then return false end
+    local ok, proxy = pcall(component.proxy, d.address)
+    if not ok or not proxy then return false end
+    if on then
+      return (pcall(proxy.open))
+    else
+      return (pcall(proxy.close))
+    end
   end
 
   return false
