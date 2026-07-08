@@ -17,6 +17,8 @@ function radar.new(opts)
     alarm = opts.alarm,            -- fn(on, message) sirène/chat (optionnel)
     alertLevel = opts.alertLevel or 2, -- DEFCON <= alertLevel => réponse
     autoLockdown = opts.autoLockdown ~= false, -- verrouiller à l'alerte (défaut oui)
+    onEscalate = opts.onEscalate,  -- fn(defcon, contacts) : ex. contre-mesures
+    onStandDown = opts.onStandDown, -- fn() : fin d'alerte
     defcon = 5,
     contacts = {},
   }, radar)
@@ -51,12 +53,14 @@ function radar:update(reading)
     if self.alarm then pcall(self.alarm, true, "DEFCON " .. newLevel) end
     if self.doors and self.autoLockdown then self.doors:lockdown("radar") end
     if self.broadcast then pcall(self.broadcast, { evt = "alert", defcon = newLevel, contacts = self.contacts }) end
+    if self.onEscalate then pcall(self.onEscalate, newLevel, self.contacts) end
   elseif wasAlert and not nowAlert then
     -- Fin d'alerte.
     if self.logs then self.logs:add("radar", "system", "fin d'alerte — DEFCON " .. newLevel) end
     if self.alarm then pcall(self.alarm, false) end
     if self.doors and self.autoLockdown then self.doors:release("radar") end
     if self.broadcast then pcall(self.broadcast, { evt = "clear", defcon = newLevel }) end
+    if self.onStandDown then pcall(self.onStandDown) end
   elseif changed and self.logs then
     self.logs:add("radar", "system", "DEFCON " .. newLevel)
   end

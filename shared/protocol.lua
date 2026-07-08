@@ -37,6 +37,12 @@ protocol.REQ = {
   SITUATION_GET   = "situation.get",    -- { token }
   PROTOCOL_LIST   = "protocol.list",    -- { token }
   PROTOCOL_RUN    = "protocol.run",     -- { token, code, drill }
+  -- Supervision réacteur & contre-mesures :
+  POWER_STATE     = "power.state",      -- { token }
+  REACTOR_SCRAM   = "reactor.scram",    -- { token, id }
+  DEFENSE_STATE   = "defense.state",    -- { token }
+  DEFENSE_MODE    = "defense.mode",     -- { token, mode }
+  DEFENSE_FIRE    = "defense.fire",     -- { token }
 }
 
 -- Actions de porte acceptées par DOOR_CMD.

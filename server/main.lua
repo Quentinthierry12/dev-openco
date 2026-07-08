@@ -21,6 +21,10 @@ local nodesSvc = require("server.services.nodes")
 local messagingSvc = require("server.services.messaging")
 local situationSvc = require("server.services.situation")
 local protocolsSvc = require("server.services.protocols")
+local powerSvc = require("server.services.power")
+local defenseSvc = require("server.services.defense")
+local hbmMachine = require("server.adapters.hbm_machine")
+local defenseOut = require("server.adapters.defense_out")
 local doorDriver = require("server.adapters.door_driver")
 local radarSource = require("server.adapters.radar_source")
 local alarmAdapter = require("server.adapters.alarm")
@@ -64,11 +68,21 @@ local function broadcast(evt)
   modem.broadcast(protocol.PORT, netsec.encode(msg))
 end
 
+-- Contre-mesures + supervision réacteur.
+local defense = defenseSvc.new({ actuate = defenseOut.actuate, logs = logs })
+local power = powerSvc.new({
+  logs = logs,
+  alarm = function(on, message) alarmAdapter.set(on, message) end,
+  onCritical = function(r) if r.autoScram then hbmMachine.scram(r.address) end end,
+})
+
 local radar = radarSvc.new({
   doors = doors,
   logs = logs,
   broadcast = broadcast,
   alarm = function(on, message) alarmAdapter.set(on, message) end,
+  onEscalate = function(defcon, contacts) defense:engage({ defcon = defcon, contacts = contacts }) end,
+  onStandDown = function() defense:standDown() end,
 })
 
 local nodes = nodesSvc.new({
@@ -98,6 +112,11 @@ local ctx = {
   accounts = accounts, auth = auth, logs = logs,
   doors = doors, radar = radar, nodes = nodes, messaging = messaging,
   situation = situation, protocols = protocols,
+  power = power, defense = defense,
+  scram = function(id)
+    local r = require("shared.reactors").get(id)
+    return r and hbmMachine.scram(r.address) or false
+  end,
 }
 
 -- Amorçage : premier lancement -> compte admin. Mot de passe lu depuis server/data/admin_pw
@@ -125,6 +144,8 @@ while true do
       modem.send(from, protocol.PORT, netsec.encode(resp))
     end
   end
-  -- Scrutation radar : l'escalade DEFCON déclenche alarme + lockdown + broadcast.
+  -- Scrutation radar : l'escalade DEFCON déclenche alarme + lockdown + broadcast (+ contre-mesures).
   pcall(function() radar:update(radarSource.read()) end)
+  -- Scrutation réacteurs/énergie : le seuil critique déclenche alarme + SCRAM auto.
+  pcall(function() power:update(hbmMachine.read()) end)
 end

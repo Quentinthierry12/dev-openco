@@ -27,11 +27,15 @@ central headless détient comptes, rôles, journaux et l'état de sécurité. Le
   « couper tous les postes » (page « INACCESSIBLE ») épargnant les écrans du mur.
 - **Installateur une-commande** (`install/`) : `wget … && install.lua` — assistant rôle + secret +
   mot de passe admin + autostart.
+- **Supervision réacteur / énergie** (`Reactor.app`) : température/combustible/puissance, seuils
+  warn/crit, **alarme + SCRAM auto** au critique.
+- **Contre-mesures anti-missile** (`Defense.app`) : modes off/manual/auto ; en auto le serveur
+  **engage automatiquement** (CIWS/intercepteur) sur escalade DEFCON ; tir manuel possible.
 - **Bonus** : HUD DEFCON OpenGlasses, hologramme des menaces.
 - **Addon OC HBM** (`hbm-oc-addon/`) : mod Forge séparé exposant les blocs HBM CE (portes/silo/
   réacteur/radar + générique) comme composants OpenComputers, sans modifier HBM.
 
-Tous les lots du plan sont implémentés. Logique métier **couverte par 121 tests**.
+Tous les lots du plan sont implémentés. Logique métier **couverte par 148 tests**.
 
 ## Structure
 

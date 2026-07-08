@@ -23,6 +23,8 @@ local nodesSvc = require("server.services.nodes")
 local messagingSvc = require("server.services.messaging")
 local situationSvc = require("server.services.situation")
 local protocolsSvc = require("server.services.protocols")
+local powerSvc = require("server.services.power")
+local defenseSvc = require("server.services.defense")
 local router = require("server.router")
 local REQ = protocol.REQ
 
@@ -382,6 +384,70 @@ local wsvc = protocolsSvc.new({ messaging = mockM, alarm = function() end, logs 
   sleep = function(s) slept[#slept + 1] = s end })
 wsvc:run("1111", { drill = false }, "admin") -- drill_evac contient un wait{s=3}
 ok(#slept >= 1 and slept[1] == 3, "le step wait appelle sleep(3)")
+
+-- 17. Supervision réacteur ---------------------------------------------------
+section("Supervision réacteur")
+local function findR(list, id) for _, x in ipairs(list) do if x.id == id then return x end end end
+local pev = { alarm = {}, crit = {} }
+local psvc = powerSvc.new({
+  logs = logsSvc.new(),
+  alarm = function(on) pev.alarm[#pev.alarm + 1] = on end,
+  onCritical = function(r) pev.crit[#pev.crit + 1] = r.id end,
+})
+local st = psvc:update({ reactor_1 = { temp = 500, fuel = 100 }, grid = { energy = 1000 } })
+eq(findR(st, "reactor_1").status, "ok", "réacteur ok en dessous du seuil")
+eq(findR(st, "grid").status, "ok", "machine energyOnly = ok")
+psvc:update({ reactor_1 = { temp = 850 } })
+eq(findR(psvc:state(), "reactor_1").status, "warn", "warn au seuil d'avertissement (800)")
+psvc:update({ reactor_1 = { temp = 1050 } })
+eq(findR(psvc:state(), "reactor_1").status, "crit", "crit au seuil critique (1000)")
+eq(#pev.crit, 1, "onCritical déclenché une fois (front montant)")
+eq(pev.alarm[#pev.alarm], true, "alarme au critique")
+psvc:update({ reactor_1 = { temp = 1050 } })
+eq(#pev.crit, 1, "pas de re-déclenchement tant que critique")
+psvc:update({ reactor_1 = { temp = 500 } })
+eq(findR(psvc:state(), "reactor_1").status, "ok", "retour à ok réarme le front")
+
+-- 18. Contre-mesures ---------------------------------------------------------
+section("Contre-mesures")
+local fired = {}
+local dsvc = defenseSvc.new({ actuate = function(e) fired[#fired + 1] = e.id end, logs = logsSvc.new(), mode = "auto", engageLevel = 2 })
+ok(dsvc:engage({ defcon = 2, contacts = {} }).fired >= 1, "auto: engage au DEFCON 2")
+local before = #fired
+dsvc:engage({ defcon = 2 })
+eq(#fired, before, "pas de re-tir tant que l'alerte dure")
+dsvc:standDown(); dsvc:engage({ defcon = 5 }); dsvc:engage({ defcon = 2 })
+ok(#fired > before, "réengage après standDown")
+dsvc:setMode("manual")
+ok(dsvc:fire("admin").fired >= 1, "tir manuel en mode manual")
+dsvc:setMode("off")
+local _, offr = dsvc:fire("admin")
+eq(offr, "mode_off", "mode off refuse le tir manuel")
+eq(dsvc:engage({ defcon = 1 }).fired, 0, "mode off n'engage pas en auto")
+
+section("Radar -> contre-mesures (onEscalate)")
+local engaged = {}
+local rdef = radarSvc.new({ logs = logsSvc.new(),
+  onEscalate = function(defcon) engaged[#engaged + 1] = defcon end,
+  onStandDown = function() engaged.down = true end })
+rdef:update({ missiles = 0, signal = 0 })
+rdef:update({ missiles = 1 })
+eq(#engaged, 1, "onEscalate appelé à l'escalade")
+rdef:update({ missiles = 0, signal = 0 })
+ok(engaged.down, "onStandDown appelé en fin d'alerte")
+
+section("Routeur — réacteur & défense")
+ctx.power = psvc
+ctx.defense = defenseSvc.new({ actuate = function() end, logs = logs, mode = "manual" })
+ctx.scram = function(id) return id ~= nil end
+ok(router.handle(ctx, req(REQ.POWER_STATE, { token = agentTok })).ok, "POWER_STATE")
+local rScramF = router.handle(ctx, req(REQ.REACTOR_SCRAM, { token = agentTok, id = "reactor_1" }))
+ok(not rScramF.ok and rScramF.error == "forbidden", "agent REFUSÉ pour REACTOR_SCRAM")
+ok(router.handle(ctx, req(REQ.REACTOR_SCRAM, { token = adminTok, id = "reactor_1" })).ok, "admin: SCRAM")
+ok(router.handle(ctx, req(REQ.DEFENSE_STATE, { token = agentTok })).ok, "DEFENSE_STATE")
+local rModeF = router.handle(ctx, req(REQ.DEFENSE_MODE, { token = agentTok, mode = "auto" }))
+ok(not rModeF.ok and rModeF.error == "forbidden", "agent REFUSÉ pour DEFENSE_MODE")
+eq(router.handle(ctx, req(REQ.DEFENSE_MODE, { token = adminTok, mode = "auto" })).data.mode, "auto", "admin change le mode défense")
 
 -- 16. Installateur : cohérence du manifeste ----------------------------------
 section("Installateur — manifeste")

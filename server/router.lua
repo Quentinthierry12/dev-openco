@@ -227,6 +227,47 @@ handlers[protocol.REQ.PROTOCOL_RUN] = function(ctx, req)
   return protocol.ok(res)
 end
 
+handlers[protocol.REQ.POWER_STATE] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.power then return protocol.ok({ reactors = {} }) end
+  return protocol.ok({ reactors = ctx.power:state() })
+end
+
+handlers[protocol.REQ.REACTOR_SCRAM] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "reactor_control")
+  if errResp then return errResp end
+  if not ctx.scram then return protocol.err("no_reactor") end
+  local ok = ctx.scram(req.id)
+  ctx.logs:add("reactor", s.name, "SCRAM " .. tostring(req.id))
+  return protocol.ok({ scram = ok and true or false })
+end
+
+handlers[protocol.REQ.DEFENSE_STATE] = function(ctx, req)
+  local _, errResp = need(ctx, req.token, "view_dashboard")
+  if errResp then return errResp end
+  if not ctx.defense then return protocol.ok({ mode = "off" }) end
+  return protocol.ok(ctx.defense:status())
+end
+
+handlers[protocol.REQ.DEFENSE_MODE] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "defense_control")
+  if errResp then return errResp end
+  if not ctx.defense then return protocol.err("no_defense") end
+  local res, reason = ctx.defense:setMode(req.mode, s.name)
+  if not res then return protocol.err(reason) end
+  return protocol.ok(res)
+end
+
+handlers[protocol.REQ.DEFENSE_FIRE] = function(ctx, req)
+  local s, errResp = need(ctx, req.token, "defense_control")
+  if errResp then return errResp end
+  if not ctx.defense then return protocol.err("no_defense") end
+  local res, reason = ctx.defense:fire(s.name)
+  if not res then return protocol.err(reason) end
+  return protocol.ok(res)
+end
+
 -- Point d'entrée.
 function router.handle(ctx, req, meta)
   local resp
