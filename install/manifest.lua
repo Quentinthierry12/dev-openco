@@ -5,7 +5,7 @@
 local SHARED = {
   "shared/protocol.lua", "shared/netsec.lua", "shared/sha2.lua", "shared/util.lua",
   "shared/roles.lua", "shared/doors.lua", "shared/site.lua", "shared/protocols.lua",
-  "shared/reactors.lua", "shared/defense.lua",
+  "shared/reactors.lua", "shared/defense.lua", "shared/branding.lua",
 }
 
 local APPS = {
@@ -47,7 +47,7 @@ manifest.ROLES = {
   terminal = concat(SHARED, {
     "mineos/lib/net.lua", "mineos/lib/card.lua", "mineos/lib/session.lua",
     "mineos/lib/writer.lua", "mineos/lib/blackout.lua",
-    "mineos/login-fork/patch.lua", "mineos/login-fork/install.lua",
+    "mineos/login-fork/patch.lua", "mineos/login-fork/install.lua", "mineos/login-fork/autorun.lua",
   }, APPS),
   agent = concat(SHARED, {
     "agent/main.lua", "agent/commands.lua",

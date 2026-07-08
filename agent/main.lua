@@ -38,6 +38,12 @@ local function nodeKind()
 end
 local KIND = nodeKind()
 
+-- Bannière SecSite.
+pcall(function()
+  local branding = require("shared.branding")
+  for _, line in ipairs(branding.BANNER) do print(line) end
+end)
+
 -- Enregistrement auprès du serveur.
 modem.broadcast(protocol.PORT, netsec.encode(protocol.request(protocol.REQ.NODE_REGISTER,
   { address = computer.address(), kind = KIND })))
