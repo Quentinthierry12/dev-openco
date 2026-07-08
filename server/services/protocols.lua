@@ -29,7 +29,7 @@ function protocols:_apply(step, actor)
   elseif t == "announce" and d.messaging then d.messaging:announce(actor, step.text)
   elseif t == "disable_nodes" and d.nodes then d.nodes:commandAll("blackout", step.exclude, actor)
   elseif t == "restore_nodes" and d.nodes then d.nodes:commandAll("release", step.exclude, actor)
-  elseif t == "wait" then --[[ temporisation gérée en jeu (timers) ; no-op ici ]] end
+  elseif t == "wait" and d.sleep then pcall(d.sleep, step.s or 1) end
 end
 
 -- run(codeOrId, { drill=bool }, actor) -> résultat ou (nil, raison)

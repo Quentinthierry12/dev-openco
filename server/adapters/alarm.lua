@@ -1,7 +1,8 @@
 -- server/adapters/alarm.lua
--- Sortie « alerte » : sirène OpenSecurity (os_alarm) + diffusion chat via Computronics (chat_box)
--- + éventuel son. Dégradation gracieuse : chaque canal est optionnel.
--- Noms de méthodes À CONFIRMER en jeu (isolés ici volontairement).
+-- Sortie « alerte » : sirène OpenSecurity (os_alarm) + diffusion chat via Computronics (chat_box).
+-- API confirmées :
+--   os_alarm : activate(), deactivate(), setAlarm(sound), setRange(0-15), listSounds()
+--   chat_box : say(message[, distance])
 
 local component = require("component")
 
@@ -16,18 +17,14 @@ end
 -- Diffuse un message dans le chat du serveur (Computronics chatbox).
 function alarm.chat(message)
   safe("chat_box", function(box)
-    if box.say then box.say(message) else box.send(message) end
+    box.say(message)
   end)
 end
 
 -- Active/désactive la sirène et annonce l'état.
 function alarm.set(on, message)
   safe("os_alarm", function(a)
-    if on then
-      if a.activate then a.activate() elseif a.setActive then a.setActive(true) end
-    else
-      if a.deactivate then a.deactivate() elseif a.setActive then a.setActive(false) end
-    end
+    if on then a.activate() else a.deactivate() end
   end)
   if message then alarm.chat((on and "[ALERTE] " or "[INFO] ") .. message) end
 end

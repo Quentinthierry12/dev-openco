@@ -363,6 +363,26 @@ local rReal = router.handle(ctx, req(REQ.PROTOCOL_RUN, { token = agentTok, code 
 ok(not rReal.ok and rReal.error == "forbidden", "agent REFUSÉ pour un protocole RÉEL")
 ok(router.handle(ctx, req(REQ.PROTOCOL_RUN, { token = adminTok, code = "0000", drill = false })).ok, "admin exécute un protocole réel")
 
+-- 15b. Sas — cycle temporisé + step wait ------------------------------------
+section("Sas — cycle temporisé")
+local scheduled = {}
+local recD2 = {}
+function recD2:write() end
+local dsvc2 = doorsSvc.new(recD2, logsSvc.new(), { schedule = function(s, fn) scheduled[#scheduled + 1] = { s = s, fn = fn } end })
+dsvc2:airlock("airlock_A", "inner", true, "t")
+eq(#scheduled, 1, "ouverture d'un battant planifie une fermeture auto")
+eq(scheduled[1].s, 3, "délai de fermeture = cycleSeconds (3)")
+ok(dsvc2.state.airlock_A.inner == true, "battant ouvert avant échéance")
+scheduled[1].fn() -- simule l'échéance du timer
+ok(dsvc2.state.airlock_A.inner == false, "le timer referme le battant")
+
+section("Protocole — step wait")
+local slept = {}
+local wsvc = protocolsSvc.new({ messaging = mockM, alarm = function() end, logs = logsSvc.new(),
+  sleep = function(s) slept[#slept + 1] = s end })
+wsvc:run("1111", { drill = false }, "admin") -- drill_evac contient un wait{s=3}
+ok(#slept >= 1 and slept[1] == 3, "le step wait appelle sleep(3)")
+
 -- 16. Installateur : cohérence du manifeste ----------------------------------
 section("Installateur — manifeste")
 local manifest = require("install.manifest")

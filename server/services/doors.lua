@@ -10,8 +10,12 @@ local cfg = require("shared.doors")
 local doors = {}
 doors.__index = doors
 
-function doors.new(driver, logs)
-  local self = setmetatable({ driver = driver, logs = logs, state = {}, locked = false }, doors)
+-- opts.schedule = function(seconds, fn) : planifie une action différée (event.timer en jeu).
+function doors.new(driver, logs, opts)
+  opts = opts or {}
+  local self = setmetatable({
+    driver = driver, logs = logs, state = {}, locked = false, schedule = opts.schedule,
+  }, doors)
   for _, d in ipairs(cfg.CONFIG) do
     self.state[d.id] = { open = false, inner = false, outer = false }
   end
@@ -52,6 +56,13 @@ function doors:airlock(id, which, open, actor)
   st[which] = open and true or false
   apply(self, door, which, open)
   log(self, actor, door.name .. " battant " .. which .. (open and " ouvert" or " fermé"))
+
+  -- Cycle temporisé : referme automatiquement le battant après cycleSeconds (sécurité du sas).
+  if open and door.cycleSeconds and self.schedule then
+    self.schedule(door.cycleSeconds, function()
+      if self.state[id][which] then self:airlock(id, which, false, "auto") end
+    end)
+  end
   return { id = id, which = which, open = st[which] }
 end
 

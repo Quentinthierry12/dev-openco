@@ -89,17 +89,36 @@ if role == "display" then kind = "display" end
 writeFile(root .. "/secsite.cfg",
   ("{role=%q,kind=%q,root=%q}"):format(role, kind, root))
 
--- 6) Autostart (best effort) : ligne à ajouter au démarrage
+-- 6) Autostart : écrit la ligne de lancement dans /home/.shrc (idempotent).
 local launch = {
   server = "SECSITE_ROOT=" .. root .. " " .. root .. "/server/main.lua",
   agent = "SECSITE_ROOT=" .. root .. " " .. root .. "/agent/main.lua",
   display = "SECSITE_ROOT=" .. root .. " " .. root .. "/display/wall.lua center",
+  terminal = "SECSITE_ROOT=" .. root .. " " .. root .. "/agent/main.lua &", -- agent en tâche de fond
 }
+local function ensureAutostart(line)
+  if not line then return end
+  local existing = ""
+  local rf = io.open("/home/.shrc", "r")
+  if rf then existing = rf:read("*a") or ""; rf:close() end
+  if existing:find(line, 1, true) then
+    print("Autostart déjà présent.")
+    return
+  end
+  local wf = io.open("/home/.shrc", "a")
+  if wf then
+    wf:write("\n# SecSite autostart\n" .. line .. "\n"); wf:close()
+    print("Autostart ajouté à /home/.shrc :")
+    print("  " .. line)
+  else
+    print("Impossible d'écrire /home/.shrc ; ajoutez manuellement : " .. line)
+  end
+end
+
 print("")
 print("=== Installation terminée (rôle: " .. role .. ") ===")
-if launch[role] then
-  print("Pour démarrer automatiquement, ajoutez à /home/.shrc :")
-  print("  " .. launch[role])
+if ask("Configurer le démarrage automatique ? (o/n)", "o") == "o" then
+  ensureAutostart(launch[role])
 end
 if role == "terminal" then
   print("Copiez les *.app dans les Applications MineOS, puis lancez:")

@@ -51,7 +51,9 @@ end
 local logs = logsSvc.new({ path = DATA .. "/logs.tbl" }); logs:load()
 local accounts = accountsSvc.new({ path = DATA .. "/accounts.tbl" }); accounts:load()
 local auth = authSvc.new(accounts, logs)
-local doors = doorsSvc.new(doorDriver.new(), logs)
+local doors = doorsSvc.new(doorDriver.new(), logs, {
+  schedule = function(seconds, fn) event.timer(seconds, fn) end, -- cycle temporisé des sas
+})
 
 local modem = component.modem
 
@@ -85,6 +87,7 @@ local messaging = messagingSvc.new({
 local situation = situationSvc.new({ radar = radar, doors = doors })
 local protocols = protocolsSvc.new({
   doors = doors, nodes = nodes, messaging = messaging, logs = logs,
+  sleep = function(seconds) os.sleep(seconds) end, -- step "wait" des protocoles
   alarm = function(on, message) alarmAdapter.set(on, message) end,
   broadcast = function(evt)
     modem.broadcast(protocol.PORT, netsec.encode({ t = protocol.EVT.ANNOUNCE, text = "[PROTOCOLE] " .. (evt.name or "") }))

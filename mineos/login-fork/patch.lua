@@ -12,6 +12,7 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 local net = require("mineos.lib.net")
 local card = require("mineos.lib.card")
 local session = require("mineos.lib.session")
+local blackout = require("mineos.lib.blackout")
 
 local patch = {}
 
@@ -32,6 +33,8 @@ end
 -- Le login MineOS choisit ensuite le profil (même nom) et ouvre la session.
 function patch.attach(onSuccess, onReject)
   return function()
+    -- Override « poste inaccessible » : si un blackout est actif, on prend l'écran d'abord.
+    if blackout.enforce() then return end
     local s, reason = patch.tryCardLogin(0.5)
     if s then
       session.set(s) -- rend le token disponible aux apps de sécurité

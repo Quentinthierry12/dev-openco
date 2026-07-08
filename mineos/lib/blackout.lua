@@ -37,4 +37,14 @@ function blackout.guard()
   end
 end
 
+-- À appeler depuis la boucle de login/kiosque : prend l'écran si le poste est en blackout.
+-- Renvoie true si le blackout a été appliqué (et vient d'être levé), false sinon.
+function blackout.enforce()
+  if blackout.active() then
+    blackout.guard()
+    return true
+  end
+  return false
+end
+
 return blackout

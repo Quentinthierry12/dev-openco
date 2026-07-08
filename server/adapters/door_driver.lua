@@ -30,14 +30,16 @@ function driver:write(door, key, on)
     return redout.set(d.side, value)
 
   elseif d.kind == "os_secdoor" then
-    if not component.isAvailable("os_secdoor") and not d.address then return false end
+    -- OpenSecurity Door Controller : open(password) / close(password) / isOpen().
+    -- Le mot de passe (optionnel) vient de la config de la porte.
+    if not d.address then return false end
     local ok, proxy = pcall(component.proxy, d.address)
     if not ok or not proxy then return false end
-    -- Noms de méthodes OpenSecurity À CONFIRMER en jeu (open/close probables).
+    local pw = d.password
     if on then
-      return (pcall(proxy.open))
+      return (pcall(proxy.open, pw))
     else
-      return (pcall(proxy.close))
+      return (pcall(proxy.close, pw))
     end
 
   elseif d.kind == "hbm_oc" then

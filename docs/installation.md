@@ -66,8 +66,21 @@ serveur écoute sur le port modem `2412` (voir `shared/protocol.lua`).
 - Un swipe de carte inconnue est refusé et journalisé ; une carte enregistrée ouvre une session.
 - Un login/mot de passe valide fonctionne aussi.
 
-## Points à confirmer en jeu (isolés dans des adaptateurs)
+## API confirmées (via wiki/sources)
 
-- Nom d'événement du lecteur OpenSecurity au swipe → `mineos/lib/card.lua` (`card.EVENTS`).
-- Point d'injection du login MineOS → `mineos/login-fork/`.
-- (Lot 2) canal redstone du radar HBM et des portes → adaptateurs `server/adapters/`.
+- **Lecteur carte** : magreader → event `magData` (cardData/cardUniqueId) ; rfidreader → `scan()`
+  puis event `rfidData` (data). Câblé dans `mineos/lib/card.lua`.
+- **Card writer** : `write(data, displayName, [locked], [color])` → `mineos/lib/writer.lua`.
+- **Alarme** : `os_alarm.activate()/deactivate()/setAlarm()/setRange()` → `server/adapters/alarm.lua`.
+- **Porte OpenSecurity** : Door Controller `open(pw)/close(pw)/isOpen()` → `door_driver.lua`
+  (kind `os_secdoor`, `password` optionnel dans la config).
+- **Chatbox Computronics** : `chat_box.say(msg[, distance])` → `server/adapters/alarm.lua`.
+- **MineOS GUI** : signatures `GUI.button/input/text/panel/comboBox/textBox/layout/container/
+  filledWindow` vérifiées.
+
+## Restent à confirmer en jeu / dans les sources
+
+- **Point d'injection du login MineOS** → `mineos/login-fork/` (appeler `patch.attach(...)` au bon
+  endroit ; `patch.tryCardLogin()` déjà utilisable pour un test manuel).
+- **Canal/face redstone** du radar HBM et des portes → `radar_source.lua`, `shared/doors.lua`.
+- **Classes/champs HBM CE** pour l'addon Java → `hbm-oc-addon/` (mapping + Reflect).
