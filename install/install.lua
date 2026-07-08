@@ -36,9 +36,16 @@ local function download(url)
   return table.concat(buf)
 end
 
+-- Crée un dossier (et ses parents) s'il n'existe pas.
+local function ensureDir(path)
+  if path and path ~= "" and not fs.exists(path) then
+    fs.makeDirectory(path)
+  end
+  return fs.exists(path)
+end
+
 local function writeFile(path, data)
-  local dir = path:match("^(.*)/[^/]+$")
-  if dir and not fs.exists(dir) then fs.makeDirectory(dir) end
+  ensureDir(path:match("^(.*)/[^/]+$"))
   local f = io.open(path, "w")
   if not f then return false end
   f:write(data); f:close()
@@ -48,6 +55,12 @@ end
 print("=== Installation SecSite (intranet de sécurité OpenComputers) ===")
 local base = ask("URL de base (GitHub raw)", DEFAULT_BASE)
 local root = ask("Dossier d'installation", DEFAULT_ROOT)
+
+-- Crée la racine d'installation dès le départ.
+if not ensureDir(root) then
+  print("Impossible de créer le dossier " .. root .. " (espace disque ? droits ?)")
+  return
+end
 
 -- 1) Manifeste
 print("Téléchargement du manifeste…")
@@ -69,6 +82,10 @@ for _, rel in ipairs(files) do
   if not data then print("  ! échec " .. rel .. " (" .. tostring(e) .. ")")
   else writeFile(root .. "/" .. rel, data); print("  ok " .. rel) end
 end
+
+-- 2b) Dossiers runtime nécessaires (secret, données persistées, config agent).
+ensureDir(root .. "/server/data") -- logs.tbl, accounts.tbl, secret, admin_pw, settings.tbl
+ensureDir(root .. "/agent")
 
 -- 3) Secret réseau (identique sur toutes les machines admises)
 local secret = ask("Secret réseau partagé (vide = générer)", "")
