@@ -7,7 +7,7 @@
 local here = debug.getinfo(1, "S").source:sub(2)
 local root = here:gsub("tools/test/run%.lua$", "")
 if root == "" then root = "./" end
-package.path = root .. "?.lua;" .. root .. "?/init.lua;" .. package.path
+package.path = root .. "?.lua;" .. root .. "?/init.lua;" .. (package.path or "")
 
 local sha2 = require("shared/sha2")
 local netsec = require("shared/netsec")

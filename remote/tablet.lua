@@ -4,7 +4,7 @@
 -- reboot/shutdown/lock. Interface texte volontairement minimale.
 
 local ROOT = (os.getenv and os.getenv("SECSITE_ROOT")) or "/home/secsite"
-package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. (package.path or "")
 
 local term = require("term")
 local net = require("mineos/lib/net")
