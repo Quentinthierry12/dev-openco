@@ -97,10 +97,15 @@ local ctx = {
   situation = situation, protocols = protocols,
 }
 
--- Amorçage : premier lancement -> compte admin par défaut (à changer !).
+-- Amorçage : premier lancement -> compte admin. Mot de passe lu depuis server/data/admin_pw
+-- (écrit par l'installateur) ; à défaut, "admin" par défaut (À CHANGER).
 if accounts:count() == 0 then
-  accounts:create({ name = "admin", role = "admin", password = "admin" })
-  logs:add("system", "system", "compte admin initial créé (mdp: admin) — À CHANGER")
+  local pw = readFile(DATA .. "/admin_pw")
+  pw = pw and pw:gsub("%s+$", "") or ""
+  local isDefault = (pw == "")
+  if isDefault then pw = "admin" end
+  accounts:create({ name = "admin", role = "admin", password = pw })
+  logs:add("system", "system", "compte admin initial créé" .. (isDefault and " (mdp: admin) — À CHANGER" or ""))
 end
 
 modem.open(protocol.PORT)

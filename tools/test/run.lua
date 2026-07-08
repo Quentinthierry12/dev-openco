@@ -363,6 +363,18 @@ local rReal = router.handle(ctx, req(REQ.PROTOCOL_RUN, { token = agentTok, code 
 ok(not rReal.ok and rReal.error == "forbidden", "agent REFUSÉ pour un protocole RÉEL")
 ok(router.handle(ctx, req(REQ.PROTOCOL_RUN, { token = adminTok, code = "0000", drill = false })).ok, "admin exécute un protocole réel")
 
+-- 16. Installateur : cohérence du manifeste ----------------------------------
+section("Installateur — manifeste")
+local manifest = require("install.manifest")
+local missing = 0
+for _, r in ipairs(manifest.ROLE_LIST) do
+  for _, rel in ipairs(manifest.ROLES[r]) do
+    local f = io.open(root .. rel, "r")
+    if f then f:close() else missing = missing + 1; print("  ✗ manquant [" .. r .. "] " .. rel) end
+  end
+end
+eq(missing, 0, "tous les fichiers listés dans le manifeste existent")
+
 -- Intégration transport complet (client -> fil -> serveur -> fil -> client) ---
 section("Transport bout-en-bout (signé)")
 local clientReq = protocol.request(protocol.REQ.PING)

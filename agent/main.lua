@@ -25,7 +25,18 @@ if secret and #secret:gsub("%s+", "") >= 8 then netsec.setSecret((secret:gsub("%
 local modem = component.modem
 modem.open(protocol.PORT)
 
-local KIND = (os.getenv and os.getenv("SECSITE_NODE_KIND")) or "terminal"
+-- Type de nœud : variable d'env, sinon secsite.cfg (écrit par l'installateur), sinon "terminal".
+local function nodeKind()
+  local env = os.getenv and os.getenv("SECSITE_NODE_KIND")
+  if env then return env end
+  local cfg = readFile(ROOT .. "/secsite.cfg")
+  if cfg then
+    local t = load("return " .. cfg, "=cfg", "t", {})
+    if t then local ok, v = pcall(t); if ok and type(v) == "table" and v.kind then return v.kind end end
+  end
+  return "terminal"
+end
+local KIND = nodeKind()
 
 -- Enregistrement auprès du serveur.
 modem.broadcast(protocol.PORT, netsec.encode(protocol.request(protocol.REQ.NODE_REGISTER,
