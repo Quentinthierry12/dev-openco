@@ -3,30 +3,30 @@
 --   lua5.3 tools/test/run.lua
 -- Couvre : SHA-256/HMAC, réseau privé (netsec), sérialisation, rôles, comptes, auth, routeur.
 
--- Rend require("shared.x") etc. utilisable quel que soit le répertoire courant.
+-- Rend require("shared/x") etc. utilisable quel que soit le répertoire courant.
 local here = debug.getinfo(1, "S").source:sub(2)
 local root = here:gsub("tools/test/run%.lua$", "")
 if root == "" then root = "./" end
 package.path = root .. "?.lua;" .. root .. "?/init.lua;" .. package.path
 
-local sha2 = require("shared.sha2")
-local netsec = require("shared.netsec")
-local util = require("shared.util")
-local roles = require("shared.roles")
-local protocol = require("shared.protocol")
-local accountsSvc = require("server.services.accounts")
-local logsSvc = require("server.services.logs")
-local authSvc = require("server.services.auth")
-local doorsSvc = require("server.services.doors")
-local radarSvc = require("server.services.radar")
-local nodesSvc = require("server.services.nodes")
-local messagingSvc = require("server.services.messaging")
-local situationSvc = require("server.services.situation")
-local protocolsSvc = require("server.services.protocols")
-local powerSvc = require("server.services.power")
-local defenseSvc = require("server.services.defense")
-local settingsSvc = require("server.services.settings")
-local router = require("server.router")
+local sha2 = require("shared/sha2")
+local netsec = require("shared/netsec")
+local util = require("shared/util")
+local roles = require("shared/roles")
+local protocol = require("shared/protocol")
+local accountsSvc = require("server/services/accounts")
+local logsSvc = require("server/services/logs")
+local authSvc = require("server/services/auth")
+local doorsSvc = require("server/services/doors")
+local radarSvc = require("server/services/radar")
+local nodesSvc = require("server/services/nodes")
+local messagingSvc = require("server/services/messaging")
+local situationSvc = require("server/services/situation")
+local protocolsSvc = require("server/services/protocols")
+local powerSvc = require("server/services/power")
+local defenseSvc = require("server/services/defense")
+local settingsSvc = require("server/services/settings")
+local router = require("server/router")
 local REQ = protocol.REQ
 
 -- Mini-framework -------------------------------------------------------------
@@ -308,7 +308,7 @@ ok(rInbox.ok and #rInbox.data.messages >= 1, "invité lit sa boîte de réceptio
 
 -- 14. Salle de contrôle : situation ------------------------------------------
 section("Situation (salle de contrôle)")
-local sit = situationSvc.new({ site = require("shared.site").CONFIG })
+local sit = situationSvc.new({ site = require("shared/site").CONFIG })
 eq(sit:compute({ defcon = 5, contacts = {}, alert = false }, {}, false).impactRisk, "aucun", "pas d'alerte -> risque aucun")
 local s1 = sit:compute({ defcon = 2, contacts = { { x = 0, y = 64, z = 100, speed = 20 } }, alert = true }, {}, false)
 ok(s1.impactETA and math.abs(s1.impactETA - 5) < 0.01, "ETA = distance/vitesse (100/20 = 5s)")
@@ -474,7 +474,7 @@ ok(router.handle(ctx, req(REQ.SETTINGS_SET, { token = adminTok, key = "defense.e
 
 -- 16. Installateur : cohérence du manifeste ----------------------------------
 section("Installateur — manifeste")
-local manifest = require("install.manifest")
+local manifest = require("install/manifest")
 local missing = 0
 for _, r in ipairs(manifest.ROLE_LIST) do
   for _, rel in ipairs(manifest.ROLES[r]) do

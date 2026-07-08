@@ -9,26 +9,26 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 local component = require("component")
 local event = require("event")
 
-local netsec = require("shared.netsec")
-local protocol = require("shared.protocol")
-local router = require("server.router")
-local logsSvc = require("server.services.logs")
-local accountsSvc = require("server.services.accounts")
-local authSvc = require("server.services.auth")
-local doorsSvc = require("server.services.doors")
-local radarSvc = require("server.services.radar")
-local nodesSvc = require("server.services.nodes")
-local messagingSvc = require("server.services.messaging")
-local situationSvc = require("server.services.situation")
-local protocolsSvc = require("server.services.protocols")
-local powerSvc = require("server.services.power")
-local defenseSvc = require("server.services.defense")
-local settingsSvc = require("server.services.settings")
-local hbmMachine = require("server.adapters.hbm_machine")
-local defenseOut = require("server.adapters.defense_out")
-local doorDriver = require("server.adapters.door_driver")
-local radarSource = require("server.adapters.radar_source")
-local alarmAdapter = require("server.adapters.alarm")
+local netsec = require("shared/netsec")
+local protocol = require("shared/protocol")
+local router = require("server/router")
+local logsSvc = require("server/services/logs")
+local accountsSvc = require("server/services/accounts")
+local authSvc = require("server/services/auth")
+local doorsSvc = require("server/services/doors")
+local radarSvc = require("server/services/radar")
+local nodesSvc = require("server/services/nodes")
+local messagingSvc = require("server/services/messaging")
+local situationSvc = require("server/services/situation")
+local protocolsSvc = require("server/services/protocols")
+local powerSvc = require("server/services/power")
+local defenseSvc = require("server/services/defense")
+local settingsSvc = require("server/services/settings")
+local hbmMachine = require("server/adapters/hbm_machine")
+local defenseOut = require("server/adapters/defense_out")
+local doorDriver = require("server/adapters/door_driver")
+local radarSource = require("server/adapters/radar_source")
+local alarmAdapter = require("server/adapters/alarm")
 
 local DATA = ROOT .. "/server/data"
 
@@ -128,7 +128,7 @@ local ctx = {
   situation = situation, protocols = protocols,
   power = power, defense = defense, settings = settings,
   scram = function(id)
-    local r = require("shared.reactors").get(id)
+    local r = require("shared/reactors").get(id)
     return r and hbmMachine.scram(r.address) or false
   end,
 }

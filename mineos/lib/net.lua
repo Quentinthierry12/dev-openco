@@ -11,9 +11,9 @@ local component = require("component")
 local computer = require("computer")
 local event = require("event")
 
-local netsec = require("shared.netsec")
-local protocol = require("shared.protocol")
-local util = require("shared.util")
+local netsec = require("shared/netsec")
+local protocol = require("shared/protocol")
+local util = require("shared/util")
 
 local net = {}
 

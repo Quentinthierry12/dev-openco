@@ -4,7 +4,7 @@
 -- OpenSecurity (os_secdoor). Utilisé par server/services/doors.lua via l'interface :write().
 
 local component = require("component")
-local redout = require("server.adapters.redstone_out")
+local redout = require("server/adapters/redstone_out")
 
 local driver = {}
 driver.__index = driver

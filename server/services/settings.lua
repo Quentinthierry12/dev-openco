@@ -2,7 +2,7 @@
 -- Réglages runtime éditables en jeu (Config.app), persistés et appliqués à chaud aux services.
 -- Seules les clés du SCHEMA sont acceptées (type contrôlé) -> pas d'édition de fichiers de code.
 
-local util = require("shared.util")
+local util = require("shared/util")
 
 local settings = {}
 settings.__index = settings

@@ -3,7 +3,7 @@
 -- lockdown, ETA avant impact, risque d'impact, temps de lockdown complet, portes importantes.
 -- Logique PURE : radar/doors sont injectés (ou passés en argument) -> testable hors-jeu.
 
-local siteCfg = require("shared.site")
+local siteCfg = require("shared/site")
 
 local situation = {}
 situation.__index = situation

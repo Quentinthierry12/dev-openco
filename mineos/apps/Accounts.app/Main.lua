@@ -7,10 +7,10 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 
 local GUI = require("GUI")
 local system = require("System")
-local net = require("mineos.lib.net")
-local session = require("mineos.lib.session")
-local protocol = require("shared.protocol")
-local roles = require("shared.roles")
+local net = require("mineos/lib/net")
+local session = require("mineos/lib/session")
+local protocol = require("shared/protocol")
+local roles = require("shared/roles")
 
 local workspace, window = system.addWindow(GUI.filledWindow(1, 1, 104, 32, 0x1E1E1E))
 window:addChild(GUI.panel(1, 1, window.width, 3, 0x2D2D2D))

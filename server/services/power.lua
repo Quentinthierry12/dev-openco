@@ -3,7 +3,7 @@
 -- et calcule un statut par machine (ok/warn/crit) + déclenche alarme/SCRAM sur seuil critique.
 -- Callbacks injectés -> testable hors-jeu.
 
-local cfg = require("shared.reactors")
+local cfg = require("shared/reactors")
 
 local power = {}
 power.__index = power

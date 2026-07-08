@@ -10,9 +10,9 @@ local component = require("component")
 local computer = require("computer")
 local event = require("event")
 
-local netsec = require("shared.netsec")
-local protocol = require("shared.protocol")
-local commands = require("agent.commands")
+local netsec = require("shared/netsec")
+local protocol = require("shared/protocol")
+local commands = require("agent/commands")
 
 -- Secret du réseau privé (même fichier que le serveur, déployé sur la machine).
 local function readFile(p)
@@ -40,7 +40,7 @@ local KIND = nodeKind()
 
 -- Bannière SecSite.
 pcall(function()
-  local branding = require("shared.branding")
+  local branding = require("shared/branding")
   for _, line in ipairs(branding.BANNER) do print(line) end
 end)
 

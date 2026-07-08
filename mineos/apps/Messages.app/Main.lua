@@ -7,9 +7,9 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 
 local GUI = require("GUI")
 local system = require("System")
-local net = require("mineos.lib.net")
-local session = require("mineos.lib.session")
-local protocol = require("shared.protocol")
+local net = require("mineos/lib/net")
+local session = require("mineos/lib/session")
+local protocol = require("shared/protocol")
 
 local workspace, window = system.addWindow(GUI.filledWindow(1, 1, 100, 32, 0x1E1E1E))
 window:addChild(GUI.panel(1, 1, window.width, 3, 0x2D2D2D))

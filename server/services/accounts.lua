@@ -3,9 +3,9 @@
 -- Les secrets ne sont jamais stockés en clair : carte et mot de passe sont hachés (SHA-256 salé).
 -- Persistance optionnelle via `path` (sans, tout reste en mémoire -> testable).
 
-local util = require("shared.util")
-local sha2 = require("shared.sha2")
-local roles = require("shared.roles")
+local util = require("shared/util")
+local sha2 = require("shared/sha2")
+local roles = require("shared/roles")
 
 local accounts = {}
 accounts.__index = accounts

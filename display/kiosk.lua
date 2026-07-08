@@ -8,8 +8,8 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 
 local component = require("component")
 local event = require("event")
-local net = require("mineos.lib.net")
-local protocol = require("shared.protocol")
+local net = require("mineos/lib/net")
+local protocol = require("shared/protocol")
 
 local gpu = component.gpu
 local DEFCON_BG = { [5] = 0x1B5E20, [4] = 0x827717, [3] = 0xF57F17, [2] = 0xE65100, [1] = 0xB71C1C }

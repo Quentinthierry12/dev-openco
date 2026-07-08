@@ -92,7 +92,7 @@ print("Apps visibles au prochain lancement de MineOS.")
 print("Login par carte : insérez ce bloc dans Libraries/System.lua > system.authorize :")
 print([[
   local secStop
-  secStop = require("mineos.login-fork.patch").cardListener(function(userName)
+  secStop = require("mineos/login-fork/patch").cardListener(function(userName)
       if filesystem.exists(paths.system.users .. userName .. "/") then
           if secStop then secStop() end
           container:remove(); updateUser(userName); workspace:draw()

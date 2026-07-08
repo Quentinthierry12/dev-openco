@@ -3,7 +3,7 @@
 -- Dépend d'OpenComputers -> vérifié en jeu.
 
 local component = require("component")
-local redout = require("server.adapters.redstone_out")
+local redout = require("server/adapters/redstone_out")
 
 local defense_out = {}
 

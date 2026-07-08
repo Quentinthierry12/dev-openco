@@ -15,9 +15,9 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 local ok, system = pcall(require, "System")
 if not ok then return end
 
-local patch = require("mineos.login-fork.patch")
-local session = require("mineos.lib.session")
-local branding = require("shared.branding")
+local patch = require("mineos/login-fork/patch")
+local session = require("mineos/lib/session")
+local branding = require("shared/branding")
 
 -- Lecture du drapeau kiosque depuis secsite.cfg.
 local function kioskEnabled()

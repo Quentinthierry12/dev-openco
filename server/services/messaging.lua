@@ -2,7 +2,7 @@
 -- Collaboration : tableau d'annonces (bulletin) + messagerie interne entre comptes.
 -- Logique PURE ; la diffusion réseau/chatbox est un callback `onAnnounce` injecté.
 
-local util = require("shared.util")
+local util = require("shared/util")
 
 local messaging = {}
 messaging.__index = messaging

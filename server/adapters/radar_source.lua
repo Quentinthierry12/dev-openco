@@ -4,7 +4,7 @@
 -- la forme du « reading » renvoyé ici, jamais la manière de l'obtenir.
 
 local component = require("component")
-local redin = require("server.adapters.redstone_in")
+local redin = require("server/adapters/redstone_in")
 
 local radar_source = {}
 

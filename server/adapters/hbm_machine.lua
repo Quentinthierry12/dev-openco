@@ -3,7 +3,7 @@
 -- Dépend d'OpenComputers -> vérifié en jeu. Renvoie un « readings » consommé par services/power.
 
 local component = require("component")
-local cfg = require("shared.reactors")
+local cfg = require("shared/reactors")
 
 local hbm = {}
 

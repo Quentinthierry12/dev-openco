@@ -7,9 +7,9 @@ package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
 
 local GUI = require("GUI")
 local system = require("System")
-local net = require("mineos.lib.net")
-local session = require("mineos.lib.session")
-local protocol = require("shared.protocol")
+local net = require("mineos/lib/net")
+local session = require("mineos/lib/session")
+local protocol = require("shared/protocol")
 
 local STATUS_COLOR = { ok = 0x66BB6A, warn = 0xF9A825, crit = 0xB71C1C, unknown = 0x757575 }
 

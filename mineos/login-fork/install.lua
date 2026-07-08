@@ -31,7 +31,7 @@ local SNIPPET = [[
 -- === SecSite: auth par carte (à coller DANS system.authorize, après la création de
 --     `container` et la définition de `updateUser`) ===
 local secStop
-secStop = require("mineos.login-fork.patch").cardListener(function(userName)
+secStop = require("mineos/login-fork/patch").cardListener(function(userName)
     -- N'accepte la carte que si un profil MineOS du même nom existe.
     if filesystem.exists(paths.system.users .. userName .. "/") then
         if secStop then secStop() end

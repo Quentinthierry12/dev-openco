@@ -6,8 +6,8 @@
 --   * liste blanche d'adresses de composants
 -- Un ordinateur qui ne connaît pas le secret ne peut ni forger ni lire un message valide.
 
-local util = require("shared.util")
-local sha2 = require("shared.sha2")
+local util = require("shared/util")
+local sha2 = require("shared/sha2")
 
 local netsec = {}
 

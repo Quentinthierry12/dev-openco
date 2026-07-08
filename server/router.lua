@@ -4,8 +4,8 @@
 -- ctx = { accounts = <accounts>, auth = <auth>, logs = <logs> }
 -- meta = { from = <adresse composant expéditeur> }
 
-local protocol = require("shared.protocol")
-local doorsCfg = require("shared.doors")
+local protocol = require("shared/protocol")
+local doorsCfg = require("shared/doors")
 
 local router = {}
 

@@ -4,8 +4,8 @@
 --   * identifiant + mot de passe (login MineOS classique)
 -- Le rôle est attaché à la session ; les permissions sont vérifiées ICI (côté serveur).
 
-local util = require("shared.util")
-local roles = require("shared.roles")
+local util = require("shared/util")
+local roles = require("shared/roles")
 
 local auth = {}
 auth.__index = auth
