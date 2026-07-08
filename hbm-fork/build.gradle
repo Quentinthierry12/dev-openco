@@ -1,0 +1,17 @@
+// hbm-fork/build.gradle — extrait à fusionner dans le build.gradle du fork HBM CE (1.12.2).
+// Ajoute OpenComputers en dépendance de compilation (deobf) tout en le gardant OPTIONNEL au runtime
+// grâce à @Optional.Interface/@Optional.Method côté code.
+
+repositories {
+    // Dépôt hébergeant l'API/les artefacts deobf d'OpenComputers.
+    maven { url = "https://maven.cil.li/" }
+}
+
+dependencies {
+    // API OpenComputers pour 1.12.2 (ajuster la version à celle du serveur).
+    // 'deobfProvided' = disponible à la compilation, non embarqué, non requis au runtime.
+    deobfProvided "li.cil.oc:OpenComputers:MC1.12.2-1.7.+:api"
+}
+
+// Rappel : HBM NTM est sous LGPL v3. Toute redistribution du jar modifié impose de publier
+// les sources sous licence libre compatible.

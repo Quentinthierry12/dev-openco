@@ -1,0 +1,50 @@
+// hbm-oc-addon/build.gradle
+// Addon Forge 1.12.2 exposant les blocs HBM CE comme composants OpenComputers.
+// OpenComputers ET HBM sont des dépendances de compilation ; l'addon reste optionnel au runtime.
+
+buildscript {
+    repositories {
+        maven { url = "https://files.minecraftforge.net/maven" }
+        maven { url = "https://repo.spongepowered.org/repository/maven-public/" }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: "net.minecraftforge.gradle", name: "ForgeGradle", version: "2.3.+", changing: true
+    }
+}
+
+apply plugin: "net.minecraftforge.gradle.forge"
+
+version = "0.1.0"
+group = "com.secsite.hbmoc"
+archivesBaseName = "hbm-oc-addon"
+
+sourceCompatibility = targetCompatibility = "1.8"
+
+minecraft {
+    version = "1.12.2-14.23.5.2860"
+    runDir = "run"
+    mappings = "stable_39"
+}
+
+repositories {
+    maven { url = "https://maven.cil.li/" } // OpenComputers
+    // + dépôt/artefact deobf de HBM CE (à renseigner selon votre source).
+}
+
+dependencies {
+    // API OpenComputers (compilation). Ajuster la version à celle du serveur.
+    deobfProvided "li.cil.oc:OpenComputers:MC1.12.2-1.7.+:api"
+
+    // HBM CE en deobf pour accéder aux classes de TileEntity (ajuster coordonnées/artefact).
+    // deobfProvided "com.hbm:ntm-ce:MC1.12.2-<version>"
+}
+
+processResources {
+    inputs.property "version", project.version
+    from(sourceSets.main.resources.srcDirs) {
+        include "mcmod.info"
+        expand "version": project.version
+    }
+    from(sourceSets.main.resources.srcDirs) { exclude "mcmod.info" }
+}
