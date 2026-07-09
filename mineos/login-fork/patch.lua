@@ -7,12 +7,12 @@
 -- À CÔTÉ, il ne remplace rien.
 
 local ROOT = (os.getenv and os.getenv("SECSITE_ROOT")) or "/home/secsite"
-package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. (package.path or "")
 
-local net = require("mineos.lib.net")
-local card = require("mineos.lib.card")
-local session = require("mineos.lib.session")
-local blackout = require("mineos.lib.blackout")
+local net = require("mineos/lib/net")
+local card = require("mineos/lib/card")
+local session = require("mineos/lib/session")
+local blackout = require("mineos/lib/blackout")
 
 local patch = {}
 

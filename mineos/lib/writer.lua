@@ -3,7 +3,7 @@
 -- La signature exacte de write(...) est À CONFIRMER en jeu ; isolée ici.
 
 local component = require("component")
-local util = require("shared.util")
+local util = require("shared/util")
 
 local writer = {}
 

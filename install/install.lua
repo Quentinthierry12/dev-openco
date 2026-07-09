@@ -36,9 +36,16 @@ local function download(url)
   return table.concat(buf)
 end
 
+-- Crée un dossier (et ses parents) s'il n'existe pas.
+local function ensureDir(path)
+  if path and path ~= "" and not fs.exists(path) then
+    fs.makeDirectory(path)
+  end
+  return fs.exists(path)
+end
+
 local function writeFile(path, data)
-  local dir = path:match("^(.*)/[^/]+$")
-  if dir and not fs.exists(dir) then fs.makeDirectory(dir) end
+  ensureDir(path:match("^(.*)/[^/]+$"))
   local f = io.open(path, "w")
   if not f then return false end
   f:write(data); f:close()
@@ -49,11 +56,20 @@ print("=== Installation SecSite (intranet de sécurité OpenComputers) ===")
 local base = ask("URL de base (GitHub raw)", DEFAULT_BASE)
 local root = ask("Dossier d'installation", DEFAULT_ROOT)
 
+-- Crée la racine d'installation dès le départ.
+if not ensureDir(root) then
+  print("Impossible de créer le dossier " .. root .. " (espace disque ? droits ?)")
+  return
+end
+
 -- 1) Manifeste
 print("Téléchargement du manifeste…")
 local manText, mErr = download(base .. "/install/manifest.lua")
 if not manText then print("Échec manifeste: " .. tostring(mErr)); return end
-local manifest = load(manText, "=manifest", "t", {})()
+-- Le manifeste est notre propre code de confiance -> environnement global (accès à ipairs/table).
+local chunk, lErr = load(manText, "=manifest", "t", _G)
+if not chunk then print("Manifeste illisible: " .. tostring(lErr)); return end
+local manifest = chunk()
 print("Rôles disponibles: " .. table.concat(manifest.ROLE_LIST, ", "))
 local role = ask("Rôle de cette machine", "terminal")
 local files = manifest.ROLES[role]
@@ -66,6 +82,10 @@ for _, rel in ipairs(files) do
   if not data then print("  ! échec " .. rel .. " (" .. tostring(e) .. ")")
   else writeFile(root .. "/" .. rel, data); print("  ok " .. rel) end
 end
+
+-- 2b) Dossiers runtime nécessaires (secret, données persistées, config agent).
+ensureDir(root .. "/server/data") -- logs.tbl, accounts.tbl, secret, admin_pw, settings.tbl
+ensureDir(root .. "/agent")
 
 -- 3) Secret réseau (identique sur toutes les machines admises)
 local secret = ask("Secret réseau partagé (vide = générer)", "")
@@ -89,36 +109,43 @@ if role == "display" then kind = "display" end
 writeFile(root .. "/secsite.cfg",
   ("{role=%q,kind=%q,root=%q}"):format(role, kind, root))
 
--- 6) Autostart : écrit la ligne de lancement dans /home/.shrc (idempotent).
-local launch = {
-  server = "SECSITE_ROOT=" .. root .. " " .. root .. "/server/main.lua",
-  agent = "SECSITE_ROOT=" .. root .. " " .. root .. "/agent/main.lua",
-  display = "SECSITE_ROOT=" .. root .. " " .. root .. "/display/wall.lua center",
-  terminal = "SECSITE_ROOT=" .. root .. " " .. root .. "/agent/main.lua &", -- agent en tâche de fond
+-- 6) Autostart : écrit la commande de lancement dans /home/.shrc (idempotent).
+-- Syntaxe OpenOS : juste le chemin du programme (pas de "VAR=val cmd", pas de "&").
+-- SECSITE_ROOT n'est nécessaire que si le dossier n'est pas le défaut /home/secsite
+-- (le code retombe sur /home/secsite si la variable est absente).
+local prog = {
+  server = root .. "/server/main.lua",
+  agent = root .. "/agent/main.lua",
+  display = root .. "/display/wall.lua center",
+  terminal = root .. "/agent/main.lua",
 }
-local function ensureAutostart(line)
-  if not line then return end
+local function ensureAutostart(programLine)
+  if not programLine then return end
+  local block = programLine
+  if root ~= "/home/secsite" then
+    block = "set SECSITE_ROOT=" .. root .. "\n" .. programLine
+  end
   local existing = ""
   local rf = io.open("/home/.shrc", "r")
   if rf then existing = rf:read("*a") or ""; rf:close() end
-  if existing:find(line, 1, true) then
+  if existing:find(programLine, 1, true) then
     print("Autostart déjà présent.")
     return
   end
   local wf = io.open("/home/.shrc", "a")
   if wf then
-    wf:write("\n# SecSite autostart\n" .. line .. "\n"); wf:close()
+    wf:write("\n# SecSite autostart\n" .. block .. "\n"); wf:close()
     print("Autostart ajouté à /home/.shrc :")
-    print("  " .. line)
+    print("  " .. programLine)
   else
-    print("Impossible d'écrire /home/.shrc ; ajoutez manuellement : " .. line)
+    print("Impossible d'écrire /home/.shrc ; ajoutez manuellement : " .. programLine)
   end
 end
 
 print("")
 print("=== Installation terminée (rôle: " .. role .. ") ===")
 if ask("Configurer le démarrage automatique ? (o/n)", "o") == "o" then
-  ensureAutostart(launch[role])
+  ensureAutostart(prog[role])
 end
 if role == "terminal" then
   print("Copiez les *.app dans les Applications MineOS, puis lancez:")

@@ -4,13 +4,13 @@
 -- Les widgets DEFCON / portes / alertes seront ajoutés au lot 2.
 
 local ROOT = (os.getenv and os.getenv("SECSITE_ROOT")) or "/home/secsite"
-package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. (package.path or "")
 
 local GUI = require("GUI")
 local system = require("System")
-local net = require("mineos.lib.net")
-local session = require("mineos.lib.session")
-local protocol = require("shared.protocol")
+local net = require("mineos/lib/net")
+local session = require("mineos/lib/session")
+local protocol = require("shared/protocol")
 
 -- Couleur d'affichage selon le niveau DEFCON (5 calme -> 1 imminent).
 local DEFCON_COLOR = { [5] = 0x2E7D32, [4] = 0x9E9D24, [3] = 0xF9A825, [2] = 0xEF6C00, [1] = 0xB71C1C }

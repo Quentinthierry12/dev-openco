@@ -4,13 +4,13 @@
 -- radar fournisse des contacts avec x/y/z (cas du fork HBM OC ; en repli redstone, pas de position).
 
 local ROOT = (os.getenv and os.getenv("SECSITE_ROOT")) or "/home/secsite"
-package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. (package.path or "")
 
 local component = require("component")
 local event = require("event")
-local net = require("mineos.lib.net")
-local session = require("mineos.lib.session")
-local protocol = require("shared.protocol")
+local net = require("mineos/lib/net")
+local session = require("mineos/lib/session")
+local protocol = require("shared/protocol")
 
 local holo = {}
 

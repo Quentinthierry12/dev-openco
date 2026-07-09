@@ -5,7 +5,7 @@
 --   off    : ne tire jamais
 -- Logique PURE : l'actionnement physique est une fonction `actuate(emplacement, threat)` injectée.
 
-local cfg = require("shared.defense")
+local cfg = require("shared/defense")
 
 local defense = {}
 defense.__index = defense

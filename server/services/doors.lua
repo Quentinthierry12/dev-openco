@@ -5,7 +5,7 @@
 -- Types (shared/doors.lua) : simple | bunker | shelter | airlock | silo.
 -- L'interlock du sas (airlock) garantit qu'un seul battant est ouvert à la fois.
 
-local cfg = require("shared.doors")
+local cfg = require("shared/doors")
 
 local doors = {}
 doors.__index = doors

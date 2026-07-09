@@ -2,7 +2,7 @@
 -- Registre de la flotte (machines gérées) + dispatch des commandes distantes.
 -- Logique PURE : l'envoi réseau réel est une fonction `send` injectée -> testable hors-jeu.
 
-local protocol = require("shared.protocol")
+local protocol = require("shared/protocol")
 
 local nodes = {}
 nodes.__index = nodes

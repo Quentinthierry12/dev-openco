@@ -6,14 +6,14 @@
 -- Lancement : display/wall.lua center
 
 local ROOT = (os.getenv and os.getenv("SECSITE_ROOT")) or "/home/secsite"
-package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. (package.path or "")
 
 local component = require("component")
 local computer = require("computer")
 local event = require("event")
-local net = require("mineos.lib.net")
-local session = require("mineos.lib.session")
-local protocol = require("shared.protocol")
+local net = require("mineos/lib/net")
+local session = require("mineos/lib/session")
+local protocol = require("shared/protocol")
 
 local args = { ... }
 local role = args[1] or "info"

@@ -4,15 +4,15 @@
 -- (reboot/shutdown/lock/status) et les exécute. Ne réagit qu'aux messages du réseau privé (HMAC).
 
 local ROOT = (os.getenv and os.getenv("SECSITE_ROOT")) or "/home/secsite"
-package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. (package.path or "")
 
 local component = require("component")
 local computer = require("computer")
 local event = require("event")
 
-local netsec = require("shared.netsec")
-local protocol = require("shared.protocol")
-local commands = require("agent.commands")
+local netsec = require("shared/netsec")
+local protocol = require("shared/protocol")
+local commands = require("agent/commands")
 
 -- Secret du réseau privé (même fichier que le serveur, déployé sur la machine).
 local function readFile(p)
@@ -37,6 +37,12 @@ local function nodeKind()
   return "terminal"
 end
 local KIND = nodeKind()
+
+-- Bannière SecSite.
+pcall(function()
+  local branding = require("shared/branding")
+  for _, line in ipairs(branding.BANNER) do print(line) end
+end)
 
 -- Enregistrement auprès du serveur.
 modem.broadcast(protocol.PORT, netsec.encode(protocol.request(protocol.REQ.NODE_REGISTER,

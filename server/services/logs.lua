@@ -2,7 +2,7 @@
 -- Journal d'audit horodaté. Persistance optionnelle (fichier) pour rester testable hors-jeu :
 -- sans `path`, tout reste en mémoire.
 
-local util = require("shared.util")
+local util = require("shared/util")
 
 local logs = {}
 logs.__index = logs

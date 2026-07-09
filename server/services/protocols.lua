@@ -2,7 +2,7 @@
 -- Exécute les protocoles (shared/protocols.lua) : drill (simulation non destructive) ou réel.
 -- Dépendances injectées (testable) : doors, nodes, messaging, alarm(fn), logs, broadcast(fn).
 
-local cfg = require("shared.protocols")
+local cfg = require("shared/protocols")
 
 local protocols = {}
 protocols.__index = protocols

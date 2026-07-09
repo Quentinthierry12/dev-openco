@@ -43,6 +43,10 @@ protocol.REQ = {
   DEFENSE_STATE   = "defense.state",    -- { token }
   DEFENSE_MODE    = "defense.mode",     -- { token, mode }
   DEFENSE_FIRE    = "defense.fire",     -- { token }
+  -- Kiosque public (sans token) & configuration :
+  KIOSK_GET       = "kiosk.get",        -- {} (aucun token requis : info publique)
+  SETTINGS_GET    = "settings.get",     -- { token }
+  SETTINGS_SET    = "settings.set",     -- { token, key, value }
 }
 
 -- Actions de porte acceptées par DOOR_CMD.

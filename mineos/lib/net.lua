@@ -5,23 +5,44 @@
 -- seul le vrai serveur peut produire une réponse valide.
 
 local ROOT = (os.getenv and os.getenv("SECSITE_ROOT")) or "/home/secsite"
-package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. package.path
+package.path = ROOT .. "/?.lua;" .. ROOT .. "/?/init.lua;" .. (package.path or "")
 
-local component = require("component")
-local computer = require("computer")
-local event = require("event")
+-- Globales OC (dispo sous OpenOS ET MineOS) ; MineOS n'a pas de lib "computer" à require.
+local component = _G.component or require("component")
+local computer = _G.computer or require("computer")
+local event = _G.event or require("event")
 
-local netsec = require("shared.netsec")
-local protocol = require("shared.protocol")
-local util = require("shared.util")
+local netsec = require("shared/netsec")
+local protocol = require("shared/protocol")
+local util = require("shared/util")
 
 local net = {}
 
-local modem = component.modem
-if not modem.isOpen(protocol.PORT) then modem.open(protocol.PORT) end
+-- Charge le secret réseau partagé (même valeur que le serveur) depuis un fichier.
+-- Sans ça, un terminal utiliserait le secret par défaut et ne verrait pas le serveur.
+local function loadSecret()
+  local candidates = {
+    ROOT .. "/secret", ROOT .. "/server/data/secret", ROOT .. "/agent/secret",
+    "/etc/secsite.secret", "/secsite.secret",
+  }
+  for _, path in ipairs(candidates) do
+    local f = io.open(path, "r")
+    if f then
+      local s = (f:read("*a") or ""):gsub("%s+$", "")
+      f:close()
+      if #s:gsub("%s+", "") >= 8 then netsec.setSecret(s); return true end
+    end
+  end
+  return false
+end
+loadSecret()
+
+local modem = component and component.modem
+if modem and not modem.isOpen(protocol.PORT) then modem.open(protocol.PORT) end
 
 -- net.request(table, timeout?) -> (réponse, nil) ou (nil, raison)
 function net.request(tbl, timeout)
+  if not modem then return nil, "no_modem" end
   timeout = timeout or 3
   tbl.id = util.uuid()
   modem.broadcast(protocol.PORT, netsec.encode(tbl))

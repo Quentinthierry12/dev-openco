@@ -3,29 +3,30 @@
 --   lua5.3 tools/test/run.lua
 -- Couvre : SHA-256/HMAC, réseau privé (netsec), sérialisation, rôles, comptes, auth, routeur.
 
--- Rend require("shared.x") etc. utilisable quel que soit le répertoire courant.
+-- Rend require("shared/x") etc. utilisable quel que soit le répertoire courant.
 local here = debug.getinfo(1, "S").source:sub(2)
 local root = here:gsub("tools/test/run%.lua$", "")
 if root == "" then root = "./" end
-package.path = root .. "?.lua;" .. root .. "?/init.lua;" .. package.path
+package.path = root .. "?.lua;" .. root .. "?/init.lua;" .. (package.path or "")
 
-local sha2 = require("shared.sha2")
-local netsec = require("shared.netsec")
-local util = require("shared.util")
-local roles = require("shared.roles")
-local protocol = require("shared.protocol")
-local accountsSvc = require("server.services.accounts")
-local logsSvc = require("server.services.logs")
-local authSvc = require("server.services.auth")
-local doorsSvc = require("server.services.doors")
-local radarSvc = require("server.services.radar")
-local nodesSvc = require("server.services.nodes")
-local messagingSvc = require("server.services.messaging")
-local situationSvc = require("server.services.situation")
-local protocolsSvc = require("server.services.protocols")
-local powerSvc = require("server.services.power")
-local defenseSvc = require("server.services.defense")
-local router = require("server.router")
+local sha2 = require("shared/sha2")
+local netsec = require("shared/netsec")
+local util = require("shared/util")
+local roles = require("shared/roles")
+local protocol = require("shared/protocol")
+local accountsSvc = require("server/services/accounts")
+local logsSvc = require("server/services/logs")
+local authSvc = require("server/services/auth")
+local doorsSvc = require("server/services/doors")
+local radarSvc = require("server/services/radar")
+local nodesSvc = require("server/services/nodes")
+local messagingSvc = require("server/services/messaging")
+local situationSvc = require("server/services/situation")
+local protocolsSvc = require("server/services/protocols")
+local powerSvc = require("server/services/power")
+local defenseSvc = require("server/services/defense")
+local settingsSvc = require("server/services/settings")
+local router = require("server/router")
 local REQ = protocol.REQ
 
 -- Mini-framework -------------------------------------------------------------
@@ -307,7 +308,7 @@ ok(rInbox.ok and #rInbox.data.messages >= 1, "invité lit sa boîte de réceptio
 
 -- 14. Salle de contrôle : situation ------------------------------------------
 section("Situation (salle de contrôle)")
-local sit = situationSvc.new({ site = require("shared.site").CONFIG })
+local sit = situationSvc.new({ site = require("shared/site").CONFIG })
 eq(sit:compute({ defcon = 5, contacts = {}, alert = false }, {}, false).impactRisk, "aucun", "pas d'alerte -> risque aucun")
 local s1 = sit:compute({ defcon = 2, contacts = { { x = 0, y = 64, z = 100, speed = 20 } }, alert = true }, {}, false)
 ok(s1.impactETA and math.abs(s1.impactETA - 5) < 0.01, "ETA = distance/vitesse (100/20 = 5s)")
@@ -449,9 +450,31 @@ local rModeF = router.handle(ctx, req(REQ.DEFENSE_MODE, { token = agentTok, mode
 ok(not rModeF.ok and rModeF.error == "forbidden", "agent REFUSÉ pour DEFENSE_MODE")
 eq(router.handle(ctx, req(REQ.DEFENSE_MODE, { token = adminTok, mode = "auto" })).data.mode, "auto", "admin change le mode défense")
 
+-- 19. Réglages (settings) + kiosk --------------------------------------------
+section("Réglages (settings)")
+local applied = {}
+local setsvc = settingsSvc.new({ apply = function(k, v) applied[k] = v end })
+local rset = setsvc:set("site.radius", "128", "admin")
+ok(rset and rset.value == 128, "set d'un number coercé depuis string")
+eq(applied["site.radius"], 128, "apply appelé avec la valeur")
+local _, se1 = setsvc:set("unknown.key", "x")
+eq(se1, "unknown_key", "clé inconnue refusée")
+local _, se2 = setsvc:set("site.radius", "abc")
+eq(se2, "bad_value", "valeur numérique invalide refusée")
+ok(#setsvc:list() >= 5, "liste des réglages du schéma")
+
+section("Routeur — kiosk & config")
+ctx.settings = settingsSvc.new({ apply = function() end })
+local rk = router.handle(ctx, req(REQ.KIOSK_GET))
+ok(rk.ok and rk.data.defcon ~= nil, "KIOSK_GET fonctionne SANS token (info publique)")
+ok(router.handle(ctx, req(REQ.SETTINGS_GET, { token = adminTok })).ok, "SETTINGS_GET admin")
+local rsf = router.handle(ctx, req(REQ.SETTINGS_GET, { token = agentTok }))
+ok(not rsf.ok and rsf.error == "forbidden", "agent REFUSÉ pour SETTINGS_GET")
+ok(router.handle(ctx, req(REQ.SETTINGS_SET, { token = adminTok, key = "defense.engageLevel", value = "1" })).ok, "SETTINGS_SET admin")
+
 -- 16. Installateur : cohérence du manifeste ----------------------------------
 section("Installateur — manifeste")
-local manifest = require("install.manifest")
+local manifest = require("install/manifest")
 local missing = 0
 for _, r in ipairs(manifest.ROLE_LIST) do
   for _, rel in ipairs(manifest.ROLES[r]) do
